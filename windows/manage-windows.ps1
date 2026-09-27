@@ -179,32 +179,82 @@ function Resolve-Configuration($Saved, $Overrides) {
 function Get-ManagerArguments([string]$Mode) {
     Join-NativeArguments @('-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$script:ManagerPath,'-Action',$Mode)
 }
+function Initialize-ShortcutApi {
+    if ('CodexUsageBadge.Shortcuts' -as [type]) { return }
+    # WScript.Shell can lose Unicode shortcut paths on non-Chinese Windows locales.
+    # Use the Unicode shell-link interface and IPersistFile directly.
+    Add-Type -TypeDefinition @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+namespace CodexUsageBadge {
+    [ComImport, Guid("00021401-0000-0000-C000-000000000046")]
+    internal class ShellLink {}
+    [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IShellLinkW {
+        void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int size, IntPtr findData, uint flags);
+        void GetIDList(out IntPtr list);
+        void SetIDList(IntPtr list);
+        void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+        void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string value);
+        void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+        void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string value);
+        void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+        void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string value);
+        void GetHotkey(out short value);
+        void SetHotkey(short value);
+        void GetShowCmd(out int value);
+        void SetShowCmd(int value);
+        void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size, out int index);
+        void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string value, int index);
+        void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string value, uint reserved);
+        void Resolve(IntPtr window, uint flags);
+        void SetPath([MarshalAs(UnmanagedType.LPWStr)] string value);
+    }
+    public sealed class LinkInfo { public string TargetPath; public string Arguments; }
+    public static class Shortcuts {
+        public static void Write(string file, string target, string arguments, string directory, string icon) {
+            object obj = new ShellLink();
+            try {
+                IShellLinkW link = (IShellLinkW)obj;
+                link.SetPath(target); link.SetArguments(arguments); link.SetWorkingDirectory(directory);
+                link.SetShowCmd(7); link.SetDescription("Codex Usage Badge");
+                if (!String.IsNullOrEmpty(icon)) link.SetIconLocation(icon, 0);
+                ((IPersistFile)obj).Save(file, true);
+            } finally { Marshal.ReleaseComObject(obj); }
+        }
+        public static LinkInfo Read(string file) {
+            object obj = new ShellLink();
+            try {
+                ((IPersistFile)obj).Load(file, 0);
+                IShellLinkW link = (IShellLinkW)obj;
+                StringBuilder target = new StringBuilder(32768), args = new StringBuilder(32768);
+                link.GetPath(target, target.Capacity, IntPtr.Zero, 4); link.GetArguments(args, args.Capacity);
+                return new LinkInfo { TargetPath = target.ToString(), Arguments = args.ToString() };
+            } finally { Marshal.ReleaseComObject(obj); }
+        }
+    }
+}
+'@
+}
 function Test-OwnedShortcut([string]$Path, [string]$Mode) {
     if (!(Test-Path -LiteralPath $Path)) { return $false }
     $item = Get-Item -LiteralPath $Path -Force
     if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { return $false }
-    $shell = New-Object -ComObject WScript.Shell
+    Initialize-ShortcutApi
     try {
-        $link = $shell.CreateShortcut($Path)
+        $link = [CodexUsageBadge.Shortcuts]::Read($Path)
         return $link.TargetPath -ieq $script:PowerShell -and $link.Arguments -ceq (Get-ManagerArguments $Mode)
-    } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($shell) }
+    } catch { return $false }
 }
 function Assert-ShortcutAvailable([string]$Path, [string]$Mode) {
     if ((Test-Path -LiteralPath $Path) -and !(Test-OwnedShortcut $Path $Mode)) { throw "快捷方式名称已被其他文件占用，未修改：$Path" }
 }
 function Write-Shortcut([string]$Path, [string]$Mode, [string]$Icon) {
     Assert-ShortcutAvailable $Path $Mode
-    $shell = New-Object -ComObject WScript.Shell
-    try {
-        $link = $shell.CreateShortcut($Path)
-        $link.TargetPath = $script:PowerShell
-        $link.Arguments = Get-ManagerArguments $Mode
-        $link.WorkingDirectory = $script:InstallRoot
-        $link.WindowStyle = 7
-        $link.Description = 'Codex Usage Badge ' + $script:Version
-        if ($Icon) { $link.IconLocation = $Icon + ',0' }
-        $link.Save()
-    } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($shell) }
+    Initialize-ShortcutApi
+    [CodexUsageBadge.Shortcuts]::Write($Path, $script:PowerShell, (Get-ManagerArguments $Mode), $script:InstallRoot, $Icon)
 }
 function Test-Worker {
     $mutex = $null
