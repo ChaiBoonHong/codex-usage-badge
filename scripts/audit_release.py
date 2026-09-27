@@ -19,13 +19,13 @@ patterns = [
 forbidden_parts = {'node_modules','vendor','backups','.devtools','__MACOSX'}
 forbidden_suffixes = {'.png','.jpg','.jpeg','.webp','.sqlite','.db','.log'}
 forbidden_names = {'auth.json','config.json','worker.json','.DS_Store','stop.request'}
-# Only this visually reviewed, generated cover is allowed; screenshots stay blocked.
-approved_media = {'assets/cover.png': 'a963d451cd700d8dbe8b7831ac30b9e813b23d5cd28144498192edf95ba93ce5'}
+# Pin reviewed generated covers; retain the previous cover for immutable release archives. Screenshots stay blocked.
+approved_media = {'assets/cover.png': {'5639dcca0897c23304b63a3578a9f226984fe55cdbe51b62c381266b3d7ae9e6', 'a963d451cd700d8dbe8b7831ac30b9e813b23d5cd28144498192edf95ba93ce5'}}
 
 def inspect(name, data):
     p = Path(name)
     approved = approved_media.get(p.as_posix())
-    if approved and hashlib.sha256(data).hexdigest() != approved:
+    if approved and hashlib.sha256(data).hexdigest() not in approved:
         raise SystemExit('Media changed; visual/privacy review required: '+name)
     if forbidden_parts.intersection(p.parts) or (p.suffix.lower() in forbidden_suffixes and not approved) or p.name in forbidden_names or p.name.startswith('.env'):
         raise SystemExit('Forbidden artifact: '+name)

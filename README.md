@@ -2,7 +2,7 @@
 
 为 Codex 桌面端增加额度显示、项目配色和会话 Token 统计。
 
-![Codex Usage Badge](assets/cover.png)
+![Codex Usage Badge：原生风格额度圆环、项目配色与 Token 色块](assets/cover.png)
 
 ## 功能
 
