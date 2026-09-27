@@ -4,6 +4,8 @@
 
 [下载安装包](https://github.com/jaykinhoo9/codex-usage-badge/releases) · [问题反馈](https://github.com/jaykinhoo9/codex-usage-badge/issues) · [隐私与安全](SECURITY.md)
 
+![Codex Usage Badge：额度双圆环、彩色文件夹与 Token 色块](assets/cover.png)
+
 ## 功能
 
 - **订阅额度**：Plus 显示 5 小时和每周剩余额度两个圆环；Pro 系列显示周额度。剩余大于 50% 为绿色，10%～50% 为黄色，小于 10% 为红色。账户未返回的额度显示不可用。

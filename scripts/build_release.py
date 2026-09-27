@@ -16,7 +16,7 @@ for platform in ['macOS', 'Windows']:
     name = f'CodexUsageBadge-{platform}-{version}'
     dest = dist / name
     dest.mkdir(exist_ok=True)
-    mapping = {'agent.cjs':'agent.cjs','README.md':'README.md','LICENSE':'LICENSE','SECURITY.md':'SECURITY.md','docs/windows.md':'docs/windows.md'}
+    mapping = {'agent.cjs':'agent.cjs','README.md':'README.md','LICENSE':'LICENSE','SECURITY.md':'SECURITY.md','docs/windows.md':'docs/windows.md','assets/cover.png':'assets/cover.png'}
     modes = {}
     generated = {}
     if platform == 'macOS':

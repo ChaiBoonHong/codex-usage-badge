@@ -6,6 +6,6 @@ The debugger allows control of the app's renderer. Keep port 39222 local; never 
 
 Folder colors are stored in localStorage. Runtime paths, status and logs remain on the user's device. Diagnostic output can contain local paths and quota values; redact it before sharing. The project never asks you to paste access tokens, cookies or API keys.
 
-Release packages contain only allowlisted code, documentation, launch scripts, the license and checksums. The build excludes user data, screenshots, logs, installation receipts, original private bundles and third-party binaries. `scripts/audit_release.py` checks tracked sources and archives for common secrets and personal paths; automated scanning is supplemented by a manual review before publishing.
+Release packages contain only allowlisted code, documentation, a reviewed generated cover, launch scripts, the license and checksums. The build excludes user data, screenshots, logs, installation receipts, original private bundles and third-party binaries. The cover is pinned by its exact SHA256; other images remain blocked. `scripts/audit_release.py` checks tracked sources and archives for common secrets and personal paths; automated scanning is supplemented by a manual review before publishing.
 
 For a vulnerability, use GitHub private vulnerability reporting when available. Do not place credentials or private conversation data in a public issue. Include a minimal synthetic reproduction.

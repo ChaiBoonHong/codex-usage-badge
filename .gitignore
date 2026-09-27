@@ -9,6 +9,7 @@ __pycache__/
 *.db
 *.zip
 *.png
+!assets/cover.png
 *.jpg
 *.jpeg
 *.webp

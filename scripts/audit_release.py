@@ -19,10 +19,15 @@ patterns = [
 forbidden_parts = {'node_modules','vendor','backups','.devtools','__MACOSX'}
 forbidden_suffixes = {'.png','.jpg','.jpeg','.webp','.sqlite','.db','.log'}
 forbidden_names = {'auth.json','config.json','worker.json','.DS_Store','stop.request'}
+# Only this visually reviewed, generated cover is allowed; screenshots stay blocked.
+approved_media = {'assets/cover.png': 'a963d451cd700d8dbe8b7831ac30b9e813b23d5cd28144498192edf95ba93ce5'}
 
 def inspect(name, data):
     p = Path(name)
-    if forbidden_parts.intersection(p.parts) or p.suffix.lower() in forbidden_suffixes or p.name in forbidden_names or p.name.startswith('.env'):
+    approved = approved_media.get(p.as_posix())
+    if approved and hashlib.sha256(data).hexdigest() != approved:
+        raise SystemExit('Media changed; visual/privacy review required: '+name)
+    if forbidden_parts.intersection(p.parts) or (p.suffix.lower() in forbidden_suffixes and not approved) or p.name in forbidden_names or p.name.startswith('.env'):
         raise SystemExit('Forbidden artifact: '+name)
     if any(pattern.search(data) for pattern in patterns):
         raise SystemExit('Potential secret/personal path (content withheld): '+name)
@@ -45,7 +50,7 @@ for archive in sorted((root/'dist').glob('*.zip')):
             if hashlib.sha256(z.read(prefix+name)).hexdigest()!=digest: raise SystemExit('Hash mismatch: '+name)
         if set(z.namelist())!=set(expected+[sums[0]]): raise SystemExit('Unexpected archive file')
         for info in z.infolist():
-            inspect(info.filename,z.read(info.filename))
+            inspect(info.filename.removeprefix(prefix),z.read(info.filename))
             if '..' in Path(info.filename).parts or info.filename.startswith('/'): raise SystemExit('Unsafe ZIP entry')
             if info.filename.endswith('.ps1') and not z.read(info.filename).startswith(b'\xef\xbb\xbf'): raise SystemExit('Missing PowerShell BOM')
     print('PASS archive privacy, allowlist and checksums:',archive.name)
