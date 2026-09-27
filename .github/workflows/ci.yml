@@ -27,6 +27,9 @@ jobs:
       - run: npx playwright install chromium --only-shell
       - run: python scripts/build_release.py
       - run: npm test
+      - name: macOS native startup helper
+        if: runner.os == 'macOS'
+        run: node tests/startup-native.cjs .devtools/macos-startup-bridge
       - name: PowerShell portability and rollback tests
         shell: pwsh
         run: ./tests/windows.ps1

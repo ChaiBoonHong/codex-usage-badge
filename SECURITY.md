@@ -1,11 +1,11 @@
-# Security and privacy
+# 隐私与安全
 
-This unofficial tool connects to the desktop app over a loopback debugging port. It does not upload data, collect telemetry, bundle credentials, or read conversation bodies. It reads only visible thread IDs and cumulative token counts from the local SQLite database. Quota is obtained through the installed Codex CLI using the user's existing account.
+统计在本机处理，无遥测或数据上传。额度使用客户端已有登录状态查询；Token 仅读取会话 ID 和累计数值，不读取聊天正文，也不要求提供 API Key、Cookie 或访问令牌。
 
-The debugger allows control of the app's renderer. Keep port 39222 local; never forward it to another host. Other local software may access the same debugger. Use only on a trusted machine. The desktop application's own connections are outside this tool's control.
+macOS 启动助手读取目标应用的进程信息、输入事件计数及时间间隔，用于避免打断操作；不读取按键内容或截图。设置和日志保存在当前用户目录。分享诊断结果前请移除个人路径与账号信息。
 
-Folder colors are stored in localStorage. Runtime paths, status and logs remain on the user's device. Diagnostic output can contain local paths and quota values; redact it before sharing. The project never asks you to paste access tokens, cookies or API keys.
+插件使用本机调试接口 `127.0.0.1:39222`。能访问该端口的其他本机程序也可能控制客户端，因此请勿将端口转发到网络。
 
-Release packages contain only allowlisted code, documentation, a reviewed generated cover, launch scripts, the license and checksums. The build excludes user data, screenshots, logs, installation receipts, original private bundles and third-party binaries. The cover is pinned by its exact SHA256; other images remain blocked. `scripts/audit_release.py` checks tracked sources and archives for common secrets and personal paths; automated scanning is supplemented by a manual review before publishing.
+发布包使用文件白名单构建，并检查凭据、个人路径与数据文件。只包含项目代码、自行编译的启动助手、文档、封面和校验清单，不包含客户端二进制或用户数据。
 
-For a vulnerability, use GitHub private vulnerability reporting when available. Do not place credentials or private conversation data in a public issue. Include a minimal synthetic reproduction.
+安全问题请优先通过 GitHub 的私密漏洞报告提交，避免在公开 Issue 中附上凭据或聊天内容。

@@ -2,6 +2,7 @@
 from pathlib import Path
 import hashlib
 import json
+import platform
 import subprocess
 import sys
 import zipfile
@@ -12,16 +13,20 @@ subprocess.run([sys.executable, str(root / 'build.py')], check=True)
 dist = root / 'dist'
 dist.mkdir(exist_ok=True)
 archives = []
-for platform in ['macOS', 'Windows']:
-    name = f'CodexUsageBadge-{platform}-{version}'
+platforms = ['macOS', 'Windows'] if platform.system() == 'Darwin' else ['Windows']
+if 'macOS' in platforms:
+    subprocess.run([sys.executable, str(root / 'scripts/build_native.py')], check=True)
+for target_platform in platforms:
+    name = f'CodexUsageBadge-{target_platform}-{version}'
     dest = dist / name
     dest.mkdir(exist_ok=True)
-    mapping = {'agent.cjs':'agent.cjs','README.md':'README.md','LICENSE':'LICENSE','SECURITY.md':'SECURITY.md','docs/windows.md':'docs/windows.md','assets/cover.png':'assets/cover.png'}
+    mapping = {'agent.cjs':'agent.cjs','README.md':'README.md','CHANGELOG.md':'CHANGELOG.md','LICENSE':'LICENSE','SECURITY.md':'SECURITY.md','docs/windows.md':'docs/windows.md','docs/macos.md':'docs/macos.md','docs/development.md':'docs/development.md','assets/cover.png':'assets/cover.png'}
     modes = {}
     generated = {}
-    if platform == 'macOS':
-        mapping.update({'manage.cjs':'manage.cjs','scripts/mac-entry.sh':'scripts/mac-entry.sh'})
+    if target_platform == 'macOS':
+        mapping.update({'manage.cjs':'manage.cjs','scripts/mac-entry.sh':'scripts/mac-entry.sh','macos/shortcuts.cjs':'macos/shortcuts.cjs','macos/startup/bridge':'.devtools/macos-startup-bridge','macos/startup/controller.cjs':'macos/startup/controller.cjs','macos/startup/watch.cjs':'macos/startup/watch.cjs'})
         modes['scripts/mac-entry.sh'] = 0o755
+        modes['macos/startup/bridge'] = 0o755
         for filename, action in [('安装.command','install'),('诊断.command','status'),('卸载.command','uninstall')]:
             generated[filename] = f'#!/bin/bash\nexec /bin/bash "$(dirname "$0")/scripts/mac-entry.sh" {action}\n'.encode()
             modes[filename] = 0o755
@@ -32,7 +37,7 @@ for platform in ['macOS', 'Windows']:
             generated[action+'.cmd'] = text.replace('\n','\r\n').encode('ascii')
     payload = {file:(root / source).read_bytes() for file,source in mapping.items()}
     payload.update(generated)
-    if platform == 'Windows':
+    if target_platform == 'Windows':
         ps = payload['manage-windows.ps1'].decode('utf-8-sig').replace('\r\n','\n')
         payload['manage-windows.ps1'] = b'\xef\xbb\xbf' + ps.replace('\n','\r\n').encode('utf-8')
     payload['SHA256SUMS.txt'] = ''.join(f'{hashlib.sha256(data).hexdigest()}  {file}\n' for file,data in sorted(payload.items())).encode()

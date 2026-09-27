@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'Windows runner required' }
 $root = Split-Path -Parent $PSScriptRoot
-$package = Join-Path $root 'dist/CodexUsageBadge-Windows-0.8.0'
+$package = Join-Path $root 'dist/CodexUsageBadge-Windows-0.9.0'
 . (Join-Path $package 'manage-windows.ps1') -Action Functions
 $temp = Join-Path ([IO.Path]::GetTempPath()) ('badge-native-中文 空格-' + [guid]::NewGuid().ToString('N'))
 $originalLocal = $env:LOCALAPPDATA

@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$package = Join-Path $root 'dist/CodexUsageBadge-Windows-0.8.0'
+$package = Join-Path $root 'dist/CodexUsageBadge-Windows-0.9.0'
 $manager = Join-Path $package 'manage-windows.ps1'
 $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile($manager, [ref]$tokens, [ref]$errors)

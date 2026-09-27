@@ -14,7 +14,7 @@ try {
     fs.writeFileSync(path.join(app,'Contents/Info.plist'),'<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>Codex</string><key>CFBundleIconFile</key><string>AppIcon.icns</string></dict></plist>');
     env.CODEX_BADGE_APP=app;
   }
-  const tests=['data-client','agent-scheduling','windows','project-colors','thread-tokens','windows-bridge'];
+  const tests=['data-client','agent-scheduling','windows','project-colors','thread-tokens','windows-bridge','startup-controller','mac-shortcuts'];
   if(process.platform==='darwin')tests.push('resolve','activation','lifecycle','regression');
   for(const name of tests){
     console.log(`\nTesting ${name}`);
