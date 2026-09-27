@@ -1,4 +1,4 @@
-# Native Windows smoke test with disposable data and a synthetic CLI; no real account/client.
+﻿# Native Windows smoke test with disposable data and a synthetic CLI; no real account/client.
 $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'Windows runner required' }
 $root = Split-Path -Parent $PSScriptRoot

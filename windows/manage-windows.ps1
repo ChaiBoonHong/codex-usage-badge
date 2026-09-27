@@ -22,11 +22,15 @@ function Write-Utf8([string]$Path, [string]$Text) {
 }
 function Write-Json([string]$Path, $Value) {
     $temp = $Path + '.tmp-' + [guid]::NewGuid().ToString('N')
+    $backup = $Path + '.replace-' + [guid]::NewGuid().ToString('N')
     try {
         Write-Utf8 $temp ($Value | ConvertTo-Json -Depth 8)
-        if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($temp, $Path, $null) }
+        # Windows PowerShell 5.1 coerces $null to an empty string for this .NET overload.
+        if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($temp, $Path, $backup) }
         else { [IO.File]::Move($temp, $Path) }
-    } finally { if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force } }
+    } finally {
+        foreach ($file in @($temp,$backup)) { if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file -Force } }
+    }
 }
 function Read-Json([string]$Path) {
     if (Test-Path -LiteralPath $Path -PathType Leaf) { Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json }
