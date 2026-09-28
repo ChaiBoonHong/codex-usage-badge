@@ -37,4 +37,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: ./tests/windows-native.ps1
+      - name: Native Windows startup adapter
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./tests/windows-startup-native.ps1
       - run: python scripts/audit_release.py

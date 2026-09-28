@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
 const { buildBootstrapScript, formatRateLimits, isMainWindow } = require('../agent.cjs');
 const root = path.resolve(__dirname, '..');
 const temp = fs.mkdtempSync(path.join(require('node:os').tmpdir(),'badge-regression-'));
-const { agentConfig, activationConfig } = require('../manage.cjs');
+const macManager = process.platform === 'darwin' ? require('../manage.cjs') : null;
 const fixture = `<!doctype html><html class="dark" data-theme="dark"><meta charset="UTF-8"><style>
 *{box-sizing:border-box}body{margin:0;background:#222;color:#ececec;font:14px -apple-system,sans-serif;display:flex;height:100vh}
 nav{width:52px;flex:0 0 52px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px;background:#292a2a}
@@ -25,10 +25,12 @@ const plus = {rateLimits:{...weekly.rateLimits,planType:'plus'}};
 const plusMissing = {rateLimits:{...plus.rateLimits,primary:null}};
 
 async function run() {
-  assert.equal(activationConfig().KeepAlive,false);
-  assert.equal(activationConfig().RunAtLoad,true);
-  assert.equal(activationConfig().StartInterval,undefined);
-  assert.ok(!agentConfig().ProgramArguments.some(s=>s.includes('manage.cjs')));
+  if (macManager) {
+    assert.equal(macManager.activationConfig().KeepAlive,false);
+    assert.equal(macManager.activationConfig().RunAtLoad,true);
+    assert.equal(macManager.activationConfig().StartInterval,undefined);
+    assert.ok(!macManager.agentConfig().ProgramArguments.some(s=>s.includes('manage.cjs')));
+  }
   assert.equal(formatRateLimits(weekly).percent, 73);
   assert.equal(formatRateLimits(weekly).windowLabel, '周');
   assert.equal(formatRateLimits(weekly).mode, 'single');
@@ -74,6 +76,17 @@ async function run() {
     await page.evaluate(()=>{document.documentElement.dataset.theme='light';document.body.style.color='#272c29';document.querySelector('nav').style.background='#f2f2f1';document.querySelector('aside').style.background='#fff';});
     await page.mouse.move(310,10);
     await page.screenshot({path:path.join(root,'tests/preview-light.png')});
+    const badgeInk=()=>page.locator('#codex-usage-badge').evaluate(el=>getComputedStyle(el).color);
+    assert.equal(await badgeInk(),'rgb(37, 49, 58)','light theme needs dark readable text');
+    await page.emulateMedia({colorScheme:'dark'});
+    assert.equal(await badgeInk(),'rgb(37, 49, 58)','explicit app light theme overrides system dark');
+    await page.evaluate(()=>document.documentElement.dataset.theme='dark');
+    assert.equal(await badgeInk(),'rgb(245, 247, 245)','theme switches without reinjection');
+    await page.evaluate(()=>document.documentElement.removeAttribute('data-theme'));
+    assert.equal(await badgeInk(),'rgb(245, 247, 245)','system dark fallback');
+    await page.emulateMedia({colorScheme:'light'});
+    assert.equal(await badgeInk(),'rgb(37, 49, 58)','system light fallback');
+    await page.evaluate(()=>document.documentElement.dataset.theme='light');
     await page.setViewportSize({width:320,height:270});
     await sleep(300);
     const small=await page.locator('#codex-usage-badge').boundingBox();

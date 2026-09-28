@@ -1,6 +1,7 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$package = Join-Path $root 'dist/CodexUsageBadge-Windows-0.9.1'
+$version = (Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw | ConvertFrom-Json).windowsVersion
+$package = Join-Path $root ('dist/CodexUsageBadge-Windows-' + $version)
 $manager = Join-Path $package 'manage-windows.ps1'
 $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile($manager, [ref]$tokens, [ref]$errors)
@@ -76,7 +77,7 @@ try {
         $script:running = $true
     }
     function Test-OwnedShortcut([string]$Path, [string]$Mode) {
-        (Test-Path -LiteralPath $Path -PathType Leaf) -and (Get-Content -LiteralPath $Path -Raw) -ceq (Get-ManagerArguments $Mode)
+        (Test-Path -LiteralPath $Path -PathType Leaf) -and (Get-Content -LiteralPath $Path -Raw -Encoding UTF8) -ceq (Get-ManagerArguments $Mode)
     }
     function Write-Shortcut([string]$Path, [string]$Mode, [string]$Icon) {
         Assert-ShortcutAvailable $Path $Mode
@@ -89,8 +90,15 @@ try {
     Assert ((Get-Content -LiteralPath (Join-Path $script:InstallRoot 'unrelated.txt')) -eq 'keep') 'unowned directory preserved'
     Remove-Item -LiteralPath $script:InstallRoot -Recurse
     Write-Utf8 $script:DesktopLink 'unrelated link'
-    Throws { Install-Badge $null } '占用'
-    Assert ((Get-Content -LiteralPath $script:DesktopLink) -eq 'unrelated link') 'unrelated shortcut preserved'
+    Install-Badge $null
+    Assert ((Get-Content -LiteralPath $script:DesktopLink) -eq 'unrelated link') 'unrelated shortcut preserved at install'
+    Uninstall-Badge
+    Assert ((Get-Content -LiteralPath $script:DesktopLink) -eq 'unrelated link') 'unrelated shortcut preserved at uninstall'
+    Remove-Item -LiteralPath $script:DesktopLink
+    [void][IO.Directory]::CreateDirectory($script:DesktopLink)
+    Install-Badge $null
+    Uninstall-Badge
+    Assert (Test-Path -LiteralPath $script:DesktopLink -PathType Container) 'unrelated folder with shortcut name preserved'
     Remove-Item -LiteralPath $script:DesktopLink
     $script:failLink = $true
     Throws { Install-Badge $null } 'injected shortcut failure'
@@ -99,14 +107,20 @@ try {
     $script:failLink = $false
     Install-Badge $null
     Assert ($script:running -and (Test-Path -LiteralPath $script:ConfigPath)) 'install succeeded'
+    Assert (!(Test-Path -LiteralPath $script:DesktopLink)) 'no separate desktop launcher created'
+    Write-Utf8 $script:DesktopLink (Get-ManagerArguments 'Launch')
+    Write-Json (Join-Path $script:InstallRoot 'startup/state.json') @{lastAttemptAt=123;event='attempt'}
     $firstConfig = Get-Content -LiteralPath $script:ConfigPath -Raw
     Write-Utf8 (Join-Path $script:InstallRoot 'old-version.txt') 'old fixture'
     $script:failStart = $true
     Throws { Install-Badge $null } 'injected startup failure'
     Assert ($script:running -and (Test-Path -LiteralPath (Join-Path $script:InstallRoot 'old-version.txt'))) 'failed upgrade restores previous install and worker'
     Assert ((Get-Content -LiteralPath $script:ConfigPath -Raw) -ceq $firstConfig) 'old config restored exactly'
+    Assert (Test-OwnedShortcut $script:DesktopLink 'Launch') 'failed upgrade restores legacy shortcut'
     Install-Badge $null
     Assert (!(Test-Path -LiteralPath (Join-Path $script:InstallRoot 'old-version.txt'))) 'successful upgrade uses new package'
+    Assert (!(Test-Path -LiteralPath $script:DesktopLink)) 'owned legacy shortcut removed'
+    Assert ((Read-Json (Join-Path $script:InstallRoot 'startup/state.json')).lastAttemptAt -eq 123) 'cooldown receipt retained during upgrade'
     Write-Utf8 (Join-Path $temp 'unrelated-data.txt') 'keep'
     Uninstall-Badge
     Assert (!$script:running -and !(Test-Path -LiteralPath $script:InstallRoot)) 'uninstall stopped worker and archived install'
@@ -116,5 +130,7 @@ try {
     Write-Host 'PASS first-install rollback, retry, upgrade rollback, backup, ownership conflicts, uninstall and repeat uninstall (Windows OS calls mocked)'
 } finally {
     $env:LOCALAPPDATA = $oldLocal; $env:USERPROFILE = $oldHome; $env:CODEX_HOME = $oldCodexHome
-    Remove-Item -LiteralPath $temp -Recurse -Force
+    $resolved=[IO.Path]::GetFullPath($temp)
+    Assert ($resolved.StartsWith([IO.Path]::GetFullPath([IO.Path]::GetTempPath()),[StringComparison]::OrdinalIgnoreCase) -and (Split-Path -Leaf $resolved) -like 'badge-windows-*') 'cleanup must stay inside fixture root'
+    Remove-Item -LiteralPath $resolved -Recurse -Force
 }
