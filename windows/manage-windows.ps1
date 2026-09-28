@@ -3,7 +3,7 @@ param(
     [string]$AppExe, [string]$NodeExe, [string]$CodexBin, [string]$CodexHome
 )
 $ErrorActionPreference = 'Stop'
-$script:Version = '0.9.1'
+$script:Version = '0.10.0'
 $script:Owner = 'local.codexusagebadge.windows'
 
 function ConvertTo-NativeArgument([AllowEmptyString()][string]$Value) {
@@ -55,6 +55,14 @@ function Initialize-Context {
     $script:PowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
     $script:MutexName = 'Local\CodexUsageBadge.' + $sid
+    # Alternate LocalAppData roots (including disposable tests) must not share the real install's worker.
+    $defaultRoot = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'CodexUsageBadge'
+    if (![IO.Path]::GetFullPath($script:InstallRoot).Equals([IO.Path]::GetFullPath($defaultRoot), [StringComparison]::OrdinalIgnoreCase)) {
+        $hash = [Security.Cryptography.SHA256]::Create()
+        try { $suffix = [BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes([IO.Path]::GetFullPath($script:InstallRoot).ToLowerInvariant()))).Replace('-','') }
+        finally { $hash.Dispose() }
+        $script:MutexName += '.' + $suffix
+    }
     $script:DesktopLink = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Codex 用量条.lnk'
     $script:StartupLink = Join-Path ([Environment]::GetFolderPath('Startup')) 'Codex Usage Badge Background.lnk'
 }
@@ -270,7 +278,7 @@ function Stop-Worker {
     if (!(Test-Worker)) { return }
     Assert-OwnedDirectory $script:InstallRoot
     Write-Utf8 $script:StopPath 'stop'
-    $deadline = [DateTime]::UtcNow.AddSeconds(15)
+    $deadline = [DateTime]::UtcNow.AddSeconds(30)
     while ((Test-Worker) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
     if (Test-Worker) { throw '后台任务尚未退出，安装目录保持不变。请注销 Windows 后重试，或先运行 Status.cmd。' }
 }
@@ -279,7 +287,7 @@ function Start-Worker {
     if (Test-Path -LiteralPath $script:StopPath) { Remove-Item -LiteralPath $script:StopPath -Force }
     if (Test-Path -LiteralPath $script:StatePath) { Remove-Item -LiteralPath $script:StatePath -Force }
     Start-Process -FilePath $script:PowerShell -ArgumentList (Get-ManagerArguments 'Run') -WindowStyle Hidden | Out-Null
-    $deadline = [DateTime]::UtcNow.AddSeconds(20)
+    $deadline = [DateTime]::UtcNow.AddSeconds(25)
     while ([DateTime]::UtcNow -lt $deadline) {
         Start-Sleep -Milliseconds 200
         $state = Read-Json $script:StatePath
@@ -293,17 +301,18 @@ function Run-Worker {
     $mutex = New-Object Threading.Mutex($false, $script:MutexName)
     $owned = $false
     $child = $null
+    $startup = $null
     try {
         try { $owned = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owned = $true }
         if (!$owned) { return }
-        # Run never launches or activates a desktop client, including at Windows login.
+        # Login only starts observers. The guarded helper completes a NEW user launch.
         while (!(Test-Path -LiteralPath $script:StopPath)) {
             try {
                 $config = Resolve-Configuration (Read-Json $script:ConfigPath) $null
                 Write-Json $script:ConfigPath $config
                 $logRoot = Join-Path $script:InstallRoot 'logs'
                 [void][IO.Directory]::CreateDirectory($logRoot)
-                Get-ChildItem -LiteralPath $logRoot -File | Sort-Object LastWriteTimeUtc -Descending | Select-Object -Skip 4 | Remove-Item -Force
+                Get-ChildItem -LiteralPath $logRoot -File | Sort-Object LastWriteTimeUtc -Descending | Select-Object -Skip 8 | Remove-Item -Force
                 $stamp = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss-fff')
                 $env:CODEX_BADGE_APP = $config.AppExe
                 $env:CODEX_BADGE_BIN = $config.CodexBin
@@ -311,24 +320,39 @@ function Run-Worker {
                 $env:CODEX_BADGE_PORT = [string]$config.Port
                 $env:CODEX_BADGE_STOP_FILE = $script:StopPath
                 $child = Start-Process -FilePath $config.NodeExe -ArgumentList (Join-NativeArguments @((Join-Path $script:InstallRoot 'agent.cjs'))) -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot ($stamp + '.out.log')) -RedirectStandardError (Join-Path $logRoot ($stamp + '.err.log'))
-                Start-Sleep -Milliseconds 800
-                if ($child.HasExited) { throw "agent 退出码：$($child.ExitCode)" }
-                Write-Json $script:StatePath @{ State = 'running'; Pid = $PID; AgentPid = $child.Id; Version = $script:Version; StartedAt = [DateTime]::UtcNow.ToString('o') }
-                while (!$child.HasExited) {
+                $startedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+                $startup = Start-Process -FilePath $config.NodeExe -ArgumentList (Join-NativeArguments @((Join-Path $script:InstallRoot 'startup/windows.cjs'))) -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot ($stamp + '.startup.out.log')) -RedirectStandardError (Join-Path $logRoot ($stamp + '.startup.err.log'))
+                $ready = $false
+                $deadline = [DateTime]::UtcNow.AddSeconds(20)
+                while ([DateTime]::UtcNow -lt $deadline -and !(Test-Path -LiteralPath $script:StopPath)) {
+                    if ($child.HasExited -or $startup.HasExited) { throw '后台进程提前退出，请检查 logs 目录。' }
+                    $receipt = Read-Json (Join-Path $script:InstallRoot 'startup/state.json')
+                    if ((Get-Setting $receipt 'event') -eq 'watching' -and $receipt.updatedAt -ge $startedAt) { $ready = $true; break }
+                    Start-Sleep -Milliseconds 200
+                }
+                if (!$ready) { throw '原生启动监测器未就绪，请检查日志。' }
+                Write-Json $script:StatePath @{ State = 'running'; Pid = $PID; AgentPid = $child.Id; StartupPid = $startup.Id; Version = $script:Version; StartedAt = [DateTime]::UtcNow.ToString('o') }
+                while (!$child.HasExited -and !$startup.HasExited) {
                     if (Test-Path -LiteralPath $script:StopPath) {
+                        if (!$startup.WaitForExit(14000)) { $startup.Kill(); $startup.WaitForExit() }
                         if (!$child.WaitForExit(6000)) { $child.Kill(); $child.WaitForExit() }
                         break
                     }
                     Start-Sleep -Milliseconds 400
                 }
+                if (!$child.HasExited) { $child.Kill(); $child.WaitForExit() }
                 $child.Dispose(); $child = $null
+                if (!$startup.HasExited) { $startup.Kill(); $startup.WaitForExit() }
+                $startup.Dispose(); $startup = $null
             } catch {
                 if ($child) { if (!$child.HasExited) { $child.Kill(); $child.WaitForExit() }; $child.Dispose(); $child = $null }
+                if ($startup) { if (!$startup.HasExited) { $startup.Kill(); $startup.WaitForExit() }; $startup.Dispose(); $startup = $null }
                 Write-Json $script:StatePath @{ State = 'error'; Message = $_.Exception.Message; Version = $script:Version }
             }
             for ($i = 0; $i -lt 30 -and !(Test-Path -LiteralPath $script:StopPath); $i++) { Start-Sleep -Seconds 1 }
         }
     } finally {
+        if ($startup) { if (!$startup.HasExited) { $startup.Kill(); $startup.WaitForExit() }; $startup.Dispose() }
         if ($child) { if (!$child.HasExited) { $child.Kill(); $child.WaitForExit() }; $child.Dispose() }
         if ($owned) { Write-Json $script:StatePath @{ State = 'stopped'; Version = $script:Version }; $mutex.ReleaseMutex() }
         $mutex.Dispose()
@@ -336,6 +360,7 @@ function Run-Worker {
 }
 function Save-ShortcutState {
     foreach ($path in @($script:DesktopLink,$script:StartupLink)) {
+        if ($path -eq $script:DesktopLink -and !(Test-OwnedShortcut $path 'Launch')) { continue }
         $data = $null
         if (Test-Path -LiteralPath $path) { $data = [IO.File]::ReadAllBytes($path) }
         [pscustomobject]@{ Path = $path; Data = $data }
@@ -349,10 +374,9 @@ function Restore-ShortcutState($Entries) {
 }
 function Install-Badge($Overrides) {
     Assert-OwnedDirectory $script:InstallRoot
-    Assert-ShortcutAvailable $script:DesktopLink 'Launch'
     Assert-ShortcutAvailable $script:StartupLink 'Run'
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $Overrides
-    foreach ($name in @('agent.cjs','bridge.cjs')) {
+    foreach ($name in @('agent.cjs','bridge.cjs','startup/controller.cjs','startup/windows.cjs')) {
         $file = Join-Path $PSScriptRoot $name
         if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "安装包不完整，请先解压 ZIP：$name" }
         [void](Invoke-Hidden $config.NodeExe @('--check',$file))
@@ -369,11 +393,17 @@ function Install-Badge($Overrides) {
         foreach ($name in @('manage-windows.ps1','agent.cjs','bridge.cjs','Install.cmd','Launch.cmd','Status.cmd','Uninstall.cmd','README-Windows.md')) {
             Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stage $name)
         }
+        [void][IO.Directory]::CreateDirectory((Join-Path $stage 'startup'))
+        foreach ($name in @('controller.cjs','windows.cjs','windows-bridge.ps1','windows-native.cs')) {
+            Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('startup/' + $name)) -Destination (Join-Path $stage ('startup/' + $name))
+        }
         Write-Json (Join-Path $stage 'config.json') $config
         Stop-Worker
+        $oldReceipt = Join-Path $script:InstallRoot 'startup/state.json'
+        if (Test-Path -LiteralPath $oldReceipt) { Copy-Item -LiteralPath $oldReceipt -Destination (Join-Path $stage 'startup/state.json') }
         if (Test-Path -LiteralPath $script:InstallRoot) { Move-Item -LiteralPath $script:InstallRoot -Destination $backup; $oldMoved = $true }
         Move-Item -LiteralPath $stage -Destination $script:InstallRoot; $swapped = $true
-        Write-Shortcut $script:DesktopLink 'Launch' $config.AppExe
+        if (Test-OwnedShortcut $script:DesktopLink 'Launch') { Remove-Item -LiteralPath $script:DesktopLink -Force }
         Write-Shortcut $script:StartupLink 'Run' $config.AppExe
         Start-Worker
     } catch {
@@ -390,8 +420,8 @@ function Install-Badge($Overrides) {
     } finally {
         if (Test-Path -LiteralPath $stage) { Assert-OwnedDirectory $stage; Remove-Item -LiteralPath $stage -Recurse -Force }
     }
-    Write-Host '安装成功。请完全退出客户端，再双击桌面「Codex 用量条」。'
-    Write-Host '后台任务不会自行打开客户端。请保留此安装包，以便诊断或卸载。'
+    Write-Host '安装成功。下次完全退出后，直接使用原来的 Codex 图标打开即可自动加载。'
+    Write-Host '已打开的窗口不会被接管。若自动加载被安全保护跳过，可完全退出后运行 Launch.cmd。'
     if ($oldMoved) { Write-Host "旧版本备份：$backup" }
 }
 function Get-DebugPages {
@@ -411,19 +441,18 @@ function Launch-Badge {
     $running = @(Get-Process -Name 'Codex','ChatGPT' -ErrorAction SilentlyContinue | Where-Object {
         try { Test-DesktopExecutable $_.Path } catch { $false }
     })
-    if ($running.Count -gt 0) { throw '客户端已运行，但没有开启用量条连接。请从托盘菜单或客户端菜单完全退出，再双击桌面「Codex 用量条」。不会强制结束你的会话。' }
+    if ($running.Count -gt 0) { throw '客户端已运行，但没有开启用量条连接。请从托盘菜单或客户端菜单完全退出，再运行 Launch.cmd。不会强制结束你的会话。' }
     # Only this explicit user action starts the GUI. The Run action cannot call this function.
     Start-Process -FilePath $config.AppExe -ArgumentList '--remote-debugging-address=127.0.0.1 --remote-debugging-port=39222' | Out-Null
     for ($i = 0; $i -lt 30; $i++) {
         if (@(Get-DebugPages).Count -gt 0) { return }
         Start-Sleep -Seconds 1
     }
-    throw '客户端已启动，但调试连接尚未就绪。请运行 Status.cmd；首次登录完成后可再次双击桌面入口。'
+    throw '客户端已启动，但调试连接尚未就绪。请运行 Status.cmd；首次登录完成后可再次运行 Launch.cmd。'
 }
 function Uninstall-Badge {
     Assert-OwnedDirectory $script:InstallRoot
     if (!(Test-Path -LiteralPath $script:InstallRoot)) { Write-Host '未安装 Windows 用量条。'; return }
-    Assert-ShortcutAvailable $script:DesktopLink 'Launch'
     Assert-ShortcutAvailable $script:StartupLink 'Run'
     Stop-Worker
     $config = Read-Json $script:ConfigPath
@@ -436,7 +465,8 @@ function Uninstall-Badge {
     $links = @(Save-ShortcutState)
     $backup = $script:InstallRoot + '.uninstalled-' + [guid]::NewGuid().ToString('N')
     try {
-        foreach ($entry in $links) { if ($null -ne $entry.Data) { Remove-Item -LiteralPath $entry.Path -Force } }
+        if (Test-OwnedShortcut $script:DesktopLink 'Launch') { Remove-Item -LiteralPath $script:DesktopLink -Force }
+        if (Test-OwnedShortcut $script:StartupLink 'Run') { Remove-Item -LiteralPath $script:StartupLink -Force }
         Move-Item -LiteralPath $script:InstallRoot -Destination $backup
     } catch { Restore-ShortcutState $links; throw }
     Write-Host "已卸载。客户端、登录信息和聊天记录保持完整。可恢复备份：$backup"
@@ -447,11 +477,13 @@ function Show-Status {
     Write-Host "后台运行：$(Test-Worker)"
     $state = Read-Json $script:StatePath
     if ($state) { Write-Host ($state | ConvertTo-Json -Compress) }
+    $receipt = Read-Json (Join-Path $script:InstallRoot 'startup/state.json')
+    if ($receipt) { Write-Host ('自动加载：' + ($receipt | ConvertTo-Json -Compress)) }
     $config = Read-Json $script:ConfigPath
     if ($config) {
         foreach ($key in @('AppExe','NodeExe','CodexBin','CodexHome')) { Write-Host ($key + '：' + $config.$key) }
         try { Write-Host (Invoke-Hidden $config.NodeExe @((Join-Path $script:InstallRoot 'bridge.cjs'),'status')) }
-        catch { Write-Host '尚未连接客户端窗口。请使用桌面「Codex 用量条」入口启动客户端。' }
+        catch { Write-Host '尚未连接客户端窗口。请完全退出后从原图标启动；必要时使用 Launch.cmd。' }
     }
 }
 

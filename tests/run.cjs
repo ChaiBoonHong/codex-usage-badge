@@ -14,11 +14,12 @@ try {
     fs.writeFileSync(path.join(app,'Contents/Info.plist'),'<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>Codex</string><key>CFBundleIconFile</key><string>AppIcon.icns</string></dict></plist>');
     env.CODEX_BADGE_APP=app;
   }
-  const tests=['data-client','agent-scheduling','windows','project-colors','thread-tokens','windows-bridge','startup-controller','mac-shortcuts'];
-  if(process.platform==='darwin')tests.push('resolve','activation','lifecycle','regression');
+  const tests=['data-client','agent-scheduling','windows','project-colors','thread-tokens','windows-bridge','startup-controller','windows-startup-controller','windows-startup','mac-shortcuts','regression'];
+  if(process.platform==='darwin')tests.push('resolve','activation','lifecycle');
   for(const name of tests){
     console.log(`\nTesting ${name}`);
-    const result=spawnSync(process.execPath,[path.join(__dirname,name+'.cjs')],{stdio:'inherit',env});
+    const flags=name==='regression'&&process.platform!=='darwin'?['--ui-only']:[];
+    const result=spawnSync(process.execPath,[path.join(__dirname,name+'.cjs'),...flags],{stdio:'inherit',env});
     if(result.status!==0)throw new Error(`${name} failed (${result.status})`);
   }
 } finally {fs.rmSync(temp,{recursive:true,force:true});}

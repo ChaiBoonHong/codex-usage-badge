@@ -2,7 +2,8 @@
 $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'Windows runner required' }
 $root = Split-Path -Parent $PSScriptRoot
-$package = Join-Path $root 'dist/CodexUsageBadge-Windows-0.9.1'
+$version = (Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw | ConvertFrom-Json).windowsVersion
+$package = Join-Path $root ('dist/CodexUsageBadge-Windows-' + $version)
 . (Join-Path $package 'manage-windows.ps1') -Action Functions
 $temp = Join-Path ([IO.Path]::GetTempPath()) ('badge-native-中文 空格-' + [guid]::NewGuid().ToString('N'))
 $originalLocal = $env:LOCALAPPDATA
@@ -26,13 +27,18 @@ try {
     # Use real .lnk APIs but keep the links away from the runner's startup/desktop folders.
     $script:DesktopLink = Join-Path $temp 'Test Desktop.lnk'
     $script:StartupLink = Join-Path $temp 'Test Startup.lnk'
+    Write-Shortcut $script:DesktopLink 'Launch' $gui
     Install-Badge ([pscustomobject]@{AppExe=$gui;NodeExe=$runtime;CodexBin=$cli;CodexHome=$env:CODEX_HOME})
     Assert (Test-Worker) 'Native hidden supervisor did not start'
-    Assert (Test-OwnedShortcut $script:DesktopLink 'Launch') 'Desktop shortcut target mismatch'
+    Assert (!(Test-Path -LiteralPath $script:DesktopLink)) 'Legacy desktop shortcut not removed'
     Assert (Test-OwnedShortcut $script:StartupLink 'Run') 'Startup shortcut target mismatch'
     $state = Read-Json $script:StatePath
     $agentPid = $state.AgentPid
+    $startupPid = $state.StartupPid
+    $nativePid = (Read-Json (Join-Path $script:InstallRoot 'startup/state.json')).nativePid
     Assert ((Get-Process -Id $agentPid).ProcessName -eq 'node') 'Expected native Node agent'
+    Assert ((Get-Process -Id $startupPid).ProcessName -eq 'node') 'Expected native startup observer'
+    Assert ((Get-Process -Id $nativePid).ProcessName -eq 'powershell') 'Expected persistent native adapter'
     $duplicate = Start-Process -FilePath $script:PowerShell -ArgumentList (Get-ManagerArguments 'Run') -WindowStyle Hidden -PassThru
     Assert ($duplicate.WaitForExit(15000)) 'Duplicate worker was not rejected'
     $duplicate.Dispose()
@@ -40,6 +46,8 @@ try {
     Stop-Worker
     Assert (!(Test-Worker)) 'Native stop-file shutdown failed'
     Assert (!(Get-Process -Id $agentPid -ErrorAction SilentlyContinue)) 'Agent process still running after stop'
+    Assert (!(Get-Process -Id $startupPid -ErrorAction SilentlyContinue)) 'Startup observer still running after stop'
+    Assert (!(Get-Process -Id $nativePid -ErrorAction SilentlyContinue)) 'Native adapter still running after stop'
     Start-Worker
     Assert (Test-Worker) 'Native worker restart failed'
     Uninstall-Badge
@@ -52,5 +60,7 @@ try {
     $env:LOCALAPPDATA = $originalLocal
     $env:CODEX_HOME = $originalCodeHome
     foreach ($key in $originalEnv.Keys) { [Environment]::SetEnvironmentVariable($key, $originalEnv[$key]) }
-    if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Recurse -Force }
+    $resolved=[IO.Path]::GetFullPath($temp)
+    Assert ($resolved.StartsWith([IO.Path]::GetFullPath([IO.Path]::GetTempPath()),[StringComparison]::OrdinalIgnoreCase) -and (Split-Path -Leaf $resolved) -like 'badge-native-*') 'cleanup must stay inside fixture root'
+    if (Test-Path -LiteralPath $resolved) { Remove-Item -LiteralPath $resolved -Recurse -Force }
 }

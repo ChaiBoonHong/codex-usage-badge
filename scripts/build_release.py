@@ -1,5 +1,6 @@
 """Allowlist-based portable release archives. Requires only the Python standard library."""
 from pathlib import Path
+import argparse
 import hashlib
 import json
 import platform
@@ -8,15 +9,19 @@ import sys
 import zipfile
 
 root = Path(__file__).resolve().parents[1]
-version = json.loads((root / 'package.json').read_text())['version']
+package = json.loads((root / 'package.json').read_text())
+parser = argparse.ArgumentParser()
+parser.add_argument('--platform', choices=['macOS', 'Windows'])
+options = parser.parse_args()
 subprocess.run([sys.executable, str(root / 'build.py')], check=True)
 dist = root / 'dist'
 dist.mkdir(exist_ok=True)
 archives = []
-platforms = ['macOS', 'Windows'] if platform.system() == 'Darwin' else ['Windows']
+platforms = [options.platform] if options.platform else (['macOS', 'Windows'] if platform.system() == 'Darwin' else ['Windows'])
 if 'macOS' in platforms:
     subprocess.run([sys.executable, str(root / 'scripts/build_native.py')], check=True)
 for target_platform in platforms:
+    version = package.get('windowsVersion', package['version']) if target_platform == 'Windows' else package['version']
     name = f'CodexUsageBadge-{target_platform}-{version}'
     dest = dist / name
     dest.mkdir(exist_ok=True)
@@ -32,14 +37,22 @@ for target_platform in platforms:
             modes[filename] = 0o755
     else:
         mapping.update({'manage-windows.ps1':'windows/manage-windows.ps1','bridge.cjs':'windows/bridge.cjs','README-Windows.md':'docs/windows.md'})
+        for filename in ['controller.cjs','windows.cjs','windows-bridge.ps1','windows-native.cs']:
+            mapping['startup/'+filename] = 'startup/'+filename
         for action in ['Install','Launch','Status','Uninstall']:
             text = f'@echo off\nsetlocal\n"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0manage-windows.ps1" -Action {action}\nset "BADGE_EXIT=%ERRORLEVEL%"\nif not "%BADGE_EXIT%"=="0" echo Operation failed. See the message above.\npause\nexit /b %BADGE_EXIT%\n'
             generated[action+'.cmd'] = text.replace('\n','\r\n').encode('ascii')
     payload = {file:(root / source).read_bytes() for file,source in mapping.items()}
     payload.update(generated)
     if target_platform == 'Windows':
-        ps = payload['manage-windows.ps1'].decode('utf-8-sig').replace('\r\n','\n')
-        payload['manage-windows.ps1'] = b'\xef\xbb\xbf' + ps.replace('\n','\r\n').encode('utf-8')
+        agent_version = f"var AGENT_VERSION = '{package['version']}';".encode()
+        if payload['agent.cjs'].count(agent_version) != 1:
+            raise SystemExit('Agent version does not match package metadata')
+        payload['agent.cjs'] = payload['agent.cjs'].replace(agent_version, f"var AGENT_VERSION = '{version}';".encode())
+        for filename in list(payload):
+            if filename.endswith('.ps1'):
+                ps = payload[filename].decode('utf-8-sig').replace('\r\n','\n')
+                payload[filename] = b'\xef\xbb\xbf' + ps.replace('\n','\r\n').encode('utf-8')
     payload['SHA256SUMS.txt'] = ''.join(f'{hashlib.sha256(data).hexdigest()}  {file}\n' for file,data in sorted(payload.items())).encode()
     archive = dist / (name+'.zip')
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
