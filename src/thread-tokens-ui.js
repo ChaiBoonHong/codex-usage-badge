@@ -1,5 +1,5 @@
 function installThreadTokens() {
-  const VERSION = 5;
+  const VERSION = 6;
   const KEY = '__codexThreadTokens';
   const ROW = '[data-app-action-sidebar-thread-row][data-app-action-sidebar-thread-id]';
   const MARK = 'data-codex-thread-tokens';
@@ -16,13 +16,21 @@ function installThreadTokens() {
   const style = document.createElement('style');
   style.id = 'codex-thread-tokens-style';
   style.textContent = `
-    [${MARK}] { --token-0: #e4e5e8; --token-1: #dce7f8; --token-2: #b1c9ed; --token-3: #709ddc; --token-4: #326cc4;
+    [${MARK}] { --token-0: #d6dce2; --token-1: #c4d5ec; --token-2: #90b2e1; --token-3: #5e90d0; --token-4: #2f6ebf;
       position: relative; display: inline-block; align-self: center; flex: 0 0 12px; width: 12px; height: 12px;
       box-sizing: border-box; border-radius: 3px; border: 0; background: var(--token-0);
       cursor: inherit; user-select: none; -webkit-app-region: no-drag; }
     [${MARK}]::before { content: ''; position: absolute; inset: -6px; }
     html.dark [${MARK}], html[data-theme="dark"] [${MARK}] {
       --token-0: #282828; --token-1: #1d293e; --token-2: #223b60; --token-3: #27528c; --token-4: #2d70ca; }
+    @media (prefers-color-scheme: dark) {
+      html:not(.light):not([data-theme="light"]) [${MARK}] {
+        --token-0: #282828; --token-1: #1d293e; --token-2: #223b60; --token-3: #27528c; --token-4: #2d70ca;
+      }
+      html:not(.light):not([data-theme="light"]) #codex-thread-tokens-tooltip {
+        background: var(--color-surface-elevated-secondary, #2c2e2c); color: var(--color-text-primary, #edf0ed);
+      }
+    }
     [${MARK}][data-level="1"] { background: var(--token-1); }
     [${MARK}][data-level="2"] { background: var(--token-2); }
     [${MARK}][data-level="3"] { background: var(--token-3); }

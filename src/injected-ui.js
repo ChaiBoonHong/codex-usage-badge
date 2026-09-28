@@ -1,5 +1,5 @@
 function installUsageBadge() {
-  const VERSION = 45;
+  const VERSION = 46;
   const KEY = '__codexUsageBadge';
   if (window[KEY]?.version === VERSION) {
     window[KEY].place();
@@ -36,18 +36,36 @@ function installUsageBadge() {
   tooltip.hidden = true;
   const style = document.createElement('style');
   style.id = 'codex-usage-badge-style';
+  const darkPalette = `
+      --usage-normal-color: #12f594; --usage-normal-soft: #25d887; --usage-normal-track: #1c6349; --usage-normal-glow: #0be38c1a;
+      --usage-warning-color: #ffd279; --usage-warning-soft: #e8aa4c; --usage-warning-track: #69522e; --usage-warning-glow: #ffb53c16;
+      --usage-danger-color: #ff9587; --usage-danger-soft: #e76964; --usage-danger-track: #683e3b; --usage-danger-glow: #ff746516;
+      --usage-muted-color: #9caaa2; --usage-muted-soft: #7b8981; --usage-muted-track: #505853; --usage-muted-glow: transparent;
+      --usage-text: #f5f7f5; --usage-label: #b6bbb7;
+      --usage-border: #ffffff17; --usage-border-hover: #ffffff29;
+      --usage-surface: linear-gradient(145deg, #414341 0%, #292b29 52%, #363936 100%);
+      --usage-shadow: inset 0 1px 1px #ffffff12, inset 0 -1px 1px #0002, 0 2px 5px #0002;
+  `;
   style.textContent = `
     #codex-usage-badge {
-      --usage-color: #12f594; --usage-soft: #25d887;
-      --usage-ring-track: #1c6349; --usage-glow: #0be38c1a;
+      --usage-normal-color: #0b805b; --usage-normal-soft: #168e65; --usage-normal-track: #d7e7df; --usage-normal-glow: #168e6508;
+      --usage-warning-color: #9e6c14; --usage-warning-soft: #b8811c; --usage-warning-track: #efe5cf; --usage-warning-glow: #b8811c08;
+      --usage-danger-color: #bc4744; --usage-danger-soft: #d45d56; --usage-danger-track: #f1ddda; --usage-danger-glow: #d45d5608;
+      --usage-muted-color: #77858e; --usage-muted-soft: #8c979f; --usage-muted-track: #e0e5e8; --usage-muted-glow: transparent;
+      --usage-text: #25313a; --usage-label: #65737c;
+      --usage-border: #52647424; --usage-border-hover: #52647440;
+      --usage-surface: linear-gradient(145deg, #fcfdfd 0%, #f3f5f6 52%, #e9eef0 100%);
+      --usage-shadow: inset 0 1px 0 #fff, inset 0 -1px 1px #23324008, 0 2px 5px #26384712;
+      --usage-color: var(--usage-normal-color); --usage-soft: var(--usage-normal-soft);
+      --usage-ring-track: var(--usage-normal-track); --usage-glow: var(--usage-normal-glow);
       --usage-width: 34px; --usage-ring-size: 26px;
       position: relative; box-sizing: border-box; width: var(--usage-width); height: 84px; flex: 0 0 84px;
       align-self: center; margin: 0 0 2px; padding: 37px 2px 10px;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-      border: 1px solid #ffffff17; border-radius: calc(var(--usage-width) / 2); outline: none; color: #f5f7f5;
+      border: 1px solid var(--usage-border); border-radius: calc(var(--usage-width) / 2); outline: none; color: var(--usage-text);
       background: radial-gradient(ellipse at 50% 17px, var(--usage-glow), transparent 69%),
-        linear-gradient(145deg, #414341 0%, #292b29 52%, #363936 100%);
-      box-shadow: inset 0 1px 1px #ffffff12, inset 0 -1px 1px #0002, 0 2px 5px #0002;
+        var(--usage-surface);
+      box-shadow: var(--usage-shadow);
       cursor: default; user-select: none;
       -webkit-app-region: no-drag; font-family: inherit;
       font-variant-numeric: tabular-nums; line-height: 1;
@@ -57,12 +75,12 @@ function installUsageBadge() {
     #codex-usage-badge .usage-secondary[hidden] { display: none !important; }
     #codex-usage-badge[data-mode="dual"] { height: 144px; flex-basis: 144px; justify-content: flex-start; padding: 37px 2px 8px; }
     #codex-usage-badge .usage-secondary {
-      --usage-color: #12f594; --usage-soft: #25d887;
-      --usage-ring-track: #1c6349; --usage-glow: #0be38c1a;
+      --usage-color: var(--usage-normal-color); --usage-soft: var(--usage-normal-soft);
+      --usage-ring-track: var(--usage-normal-track); --usage-glow: var(--usage-normal-glow);
       position: relative; box-sizing: border-box; width: 100%; flex: 0 0 64px;
       display: flex; flex-direction: column; align-items: center; padding: 33px 0 0; gap: 4px;
     }
-    #codex-usage-badge:hover { border-color: #ffffff29; }
+    #codex-usage-badge:hover { border-color: var(--usage-border-hover); }
     #codex-usage-badge:focus-visible { outline: 1px solid var(--usage-color); outline-offset: 2px; }
     #codex-usage-badge .usage-ring {
       display: block; position: absolute;
@@ -84,10 +102,14 @@ function installUsageBadge() {
     }
     #codex-usage-badge .usage-secondary .usage-ring-value { stroke: url(#codex-usage-ring-gradient-weekly); }
     #codex-usage-badge .usage-number { font-size: 11px; line-height: 14px; font-weight: 700; letter-spacing: -.3px; white-space: nowrap; }
-    #codex-usage-badge .usage-window { font-size: 7.5px; line-height: 9px; font-weight: 400; color: #b6bbb7; white-space: nowrap; }
-    #codex-usage-badge[data-tone="warning"], #codex-usage-badge .usage-secondary[data-tone="warning"] { --usage-color: #ffd279; --usage-soft: #e8aa4c; --usage-ring-track: #69522e; --usage-glow: #ffb53c16; }
-    #codex-usage-badge[data-tone="danger"], #codex-usage-badge .usage-secondary[data-tone="danger"] { --usage-color: #ff9587; --usage-soft: #e76964; --usage-ring-track: #683e3b; --usage-glow: #ff746516; }
-    #codex-usage-badge[data-tone="muted"], #codex-usage-badge .usage-secondary[data-tone="muted"] { --usage-color: #9caaa2; --usage-soft: #7b8981; --usage-ring-track: #505853; --usage-glow: transparent; }
+    #codex-usage-badge .usage-window { font-size: 7.5px; line-height: 9px; font-weight: 400; color: var(--usage-label); white-space: nowrap; }
+    #codex-usage-badge[data-tone="warning"], #codex-usage-badge .usage-secondary[data-tone="warning"] { --usage-color: var(--usage-warning-color); --usage-soft: var(--usage-warning-soft); --usage-ring-track: var(--usage-warning-track); --usage-glow: var(--usage-warning-glow); }
+    #codex-usage-badge[data-tone="danger"], #codex-usage-badge .usage-secondary[data-tone="danger"] { --usage-color: var(--usage-danger-color); --usage-soft: var(--usage-danger-soft); --usage-ring-track: var(--usage-danger-track); --usage-glow: var(--usage-danger-glow); }
+    #codex-usage-badge[data-tone="muted"], #codex-usage-badge .usage-secondary[data-tone="muted"] { --usage-color: var(--usage-muted-color); --usage-soft: var(--usage-muted-soft); --usage-ring-track: var(--usage-muted-track); --usage-glow: var(--usage-muted-glow); }
+    html.dark #codex-usage-badge, html[data-theme="dark"] #codex-usage-badge { ${darkPalette} }
+    @media (prefers-color-scheme: dark) {
+      html:not(.light):not([data-theme="light"]) #codex-usage-badge { ${darkPalette} }
+    }
     #codex-usage-tooltip {
       box-sizing: border-box; position: fixed; z-index: 2147483000;
       max-width: min(300px, calc(100vw - 16px)); padding: 10px 12px;
@@ -101,6 +123,11 @@ function installUsageBadge() {
     html.dark #codex-usage-tooltip, html[data-theme="dark"] #codex-usage-tooltip {
       background: var(--color-surface-elevated-secondary, #2c2e2c);
       color: var(--color-text-primary, #edf0ed);
+    }
+    @media (prefers-color-scheme: dark) {
+      html:not(.light):not([data-theme="light"]) #codex-usage-tooltip {
+        background: var(--color-surface-elevated-secondary, #2c2e2c); color: var(--color-text-primary, #edf0ed);
+      }
     }
     @media (prefers-reduced-motion: reduce) { #codex-usage-badge .usage-ring-value { transition: none; } }
   `;

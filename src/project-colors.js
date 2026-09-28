@@ -1,5 +1,5 @@
 function installProjectColors() {
-  const VERSION = 1;
+  const VERSION = 2;
   const KEY = '__codexProjectColors';
   const PREFIX = 'codex-usage-badge.project-color.v1:';
   const ROW = '[data-app-action-sidebar-project-row][data-app-action-sidebar-project-id]';
@@ -7,8 +7,8 @@ function installProjectColors() {
   if (window[KEY]?.version === VERSION) { window[KEY].refresh(); return; }
   window[KEY]?.destroy?.();
   const colors = [
-    ['red', '红色', '#ff5f57'], ['orange', '橙色', '#ff9f0a'], ['yellow', '黄色', '#ffd60a'],
-    ['green', '绿色', '#30d158'], ['blue', '蓝色', '#0a84ff'], ['purple', '紫色', '#bf5af2'], ['gray', '灰色', '#98989d']
+    ['red', '红色', '#ff5f57', '#cf4b43'], ['orange', '橙色', '#ff9f0a', '#b76c10'], ['yellow', '黄色', '#ffd60a', '#92700b'],
+    ['green', '绿色', '#30d158', '#268347'], ['blue', '蓝色', '#0a84ff', '#2674bf'], ['purple', '紫色', '#bf5af2', '#9950c0'], ['gray', '灰色', '#98989d', '#717980']
   ];
   const allowed = new Set(colors.map(c => c[0]));
   const menus = new Map();
@@ -17,7 +17,11 @@ function installProjectColors() {
   let storageAvailable = true;
   const style = document.createElement('style');
   style.id = 'codex-project-colors-style';
-  style.textContent = colors.map(([id, , color]) => `[${MARK}="${id}"], [${MARK}="${id}"] svg { color: ${color} !important; }`).join('\n') + `
+  const iconRules = (selector, dark = false) => colors.map(([id, , darkColor, lightColor]) =>
+    `${selector} [${MARK}="${id}"], ${selector} [${MARK}="${id}"] svg { color: ${dark ? darkColor : lightColor} !important; }`).join('\n');
+  style.textContent = iconRules('html') + iconRules('html.dark', true) + iconRules('html[data-theme="dark"]', true) + `
+    @media (prefers-color-scheme: dark) { ${iconRules('html:not(.light):not([data-theme="light"])', true)} }
+
     [data-codex-project-palette] { flex-shrink: 0; box-sizing: border-box; min-width: 224px; margin-top: 6px; padding: 10px 8px 8px; border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
     [data-codex-project-palette] .project-colors-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; font: 12px/18px -apple-system, BlinkMacSystemFont, sans-serif; color: inherit; }
     [data-codex-project-palette] .project-colors-label { opacity: .65; }

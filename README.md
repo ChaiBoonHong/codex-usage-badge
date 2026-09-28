@@ -1,6 +1,6 @@
 # Codex Usage Badge · Codex 用量条
 
-为 Codex 桌面端增加额度显示、项目配色和会话 Token 统计。
+为 Codex 桌面端增加额度显示、项目配色和会话 Token 统计，适配浅色与深色主题。
 
 ![Codex Usage Badge：原生风格额度圆环、项目配色与 Token 色块](assets/cover.png)
 
@@ -12,12 +12,12 @@
 
 ## 下载
 
-[**v0.9.0 预发布版**](https://github.com/jaykinhoo9/codex-usage-badge/releases/tag/v0.9.0)
+[**v0.9.1 预发布版**](https://github.com/jaykinhoo9/codex-usage-badge/releases/tag/v0.9.1)
 
 | 系统 | 安装包 | 使用说明 |
 | --- | --- | --- |
-| macOS · Apple Silicon / Intel | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.9.0/CodexUsageBadge-macOS-0.9.0.zip) | [macOS 安装](docs/macos.md) |
-| Windows 10 / 11 | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.9.0/CodexUsageBadge-Windows-0.9.0.zip) | [Windows 安装](docs/windows.md) |
+| macOS · Apple Silicon / Intel | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.9.1/CodexUsageBadge-macOS-0.9.1.zip) | [macOS 安装](docs/macos.md) |
+| Windows 10 / 11 | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.9.1/CodexUsageBadge-Windows-0.9.1.zip) | [Windows 安装](docs/windows.md) |
 
 macOS 安装后沿用原应用图标，启动时自动加载；Windows 使用安装器创建的桌面入口。需要已登录的 Codex 客户端和 Node.js 24+，安装器会优先查找客户端自带的运行环境。
 

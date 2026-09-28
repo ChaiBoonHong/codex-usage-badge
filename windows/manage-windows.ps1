@@ -3,7 +3,7 @@ param(
     [string]$AppExe, [string]$NodeExe, [string]$CodexBin, [string]$CodexHome
 )
 $ErrorActionPreference = 'Stop'
-$script:Version = '0.9.0'
+$script:Version = '0.9.1'
 $script:Owner = 'local.codexusagebadge.windows'
 
 function ConvertTo-NativeArgument([AllowEmptyString()][string]$Value) {
