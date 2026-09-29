@@ -18,6 +18,8 @@ python3 scripts/build_release.py --platform Windows
 
 The Windows version comes from `package.json` `windowsVersion`. The builder writes the ZIP and `SHA256SUMS.txt` to `dist/`, uses an allowlist, and replaces the generated agent version inside the Windows archive.
 
+Publish Windows builds as normal GitHub releases. Do not mark them as prereleases unless the user explicitly requests a prerelease.
+
 Run Windows PowerShell checks with `pwsh -File tests/windows.ps1`. The startup bridge check is `powershell -NoProfile -ExecutionPolicy Bypass -File tests/windows-startup-native.ps1`; it uses only a temporary hidden app.
 
 The badge reads Codex usage through the signed-in CLI. Plus plans expose both 5-hour and weekly windows; Pro shows the weekly window. Token totals come from the local session database, include cached input, and are not a current-context measurement.
