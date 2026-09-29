@@ -1,5 +1,10 @@
 # Changelog
 
+## Windows 0.11.6
+
+- Replaced the separate Windows command files with one `Codex Usage Badge.cmd` menu.
+- Added an explicit save-work confirmation before a post-install Codex restart.
+
 ## Windows 0.11.5
 
 - Made `Launch.cmd` a guarded, explicit recovery path for Microsoft Store Codex when automatic startup cannot attach.

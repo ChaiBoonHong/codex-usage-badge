@@ -3,7 +3,7 @@ param(
     [string]$AppExe, [string]$NodeExe, [string]$CodexBin, [string]$CodexHome
 )
 $ErrorActionPreference = 'Stop'
-$script:Version = '0.11.5'
+$script:Version = '0.11.6'
 $script:Owner = 'local.codexusagebadge.windows'
 
 function ConvertTo-NativeArgument([AllowEmptyString()][string]$Value) {
@@ -155,7 +155,7 @@ function Select-Runtime([string[]]$Candidates, [string]$Kind) {
             return (Get-Item -LiteralPath $file).FullName
         } catch {}
     }
-    if ($Kind -eq 'Node') { throw 'No usable Node.js 24+ runtime with node:sqlite was found. Open Codex once or install Node.js 24 LTS, then rerun Install.cmd.' }
+    if ($Kind -eq 'Node') { throw 'No usable Node.js 24+ runtime with node:sqlite was found. Open Codex once or install Node.js 24 LTS, then rerun Codex Usage Badge.cmd.' }
     throw 'No usable Codex CLI was found. Open Codex once or use -CodexBin to specify its bundled codex.exe.'
 }
 function Resolve-Configuration($Saved, $Overrides) {
@@ -280,7 +280,7 @@ function Stop-Worker {
     Write-Utf8 $script:StopPath 'stop'
     $deadline = [DateTime]::UtcNow.AddSeconds(30)
     while ((Test-Worker) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
-    if (Test-Worker) { throw 'The background worker did not stop; the installation directory is unchanged. Sign out of Windows and retry, or run Status.cmd first.' }
+    if (Test-Worker) { throw 'The background worker did not stop; the installation directory is unchanged. Sign out of Windows and retry, or choose Check status from Codex Usage Badge.cmd first.' }
 }
 function Start-Worker {
     if (Test-Worker) { return }
@@ -294,7 +294,7 @@ function Start-Worker {
         if ((Test-Worker) -and (Get-Setting $state 'State') -eq 'running') { return }
         if ((Get-Setting $state 'State') -eq 'error') { throw $state.Message }
     }
-    throw 'Background startup timed out. Run Status.cmd for details.'
+    throw 'Background startup timed out. Choose Check status from Codex Usage Badge.cmd for details.'
 }
 function Run-Worker {
     Assert-OwnedDirectory $script:InstallRoot
@@ -390,7 +390,7 @@ function Install-Badge($Overrides) {
     try {
         [void][IO.Directory]::CreateDirectory($stage)
         Write-Utf8 (Join-Path $stage '.codex-usage-badge-owner') $script:Owner
-        foreach ($name in @('manage-windows.ps1','agent.cjs','bridge.cjs','Install.cmd','Launch.cmd','Status.cmd','Uninstall.cmd')) {
+        foreach ($name in @('Codex Usage Badge.cmd','manage-windows.ps1','agent.cjs','bridge.cjs')) {
             Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stage $name)
         }
         [void][IO.Directory]::CreateDirectory((Join-Path $stage 'startup'))
@@ -420,8 +420,7 @@ function Install-Badge($Overrides) {
     } finally {
         if (Test-Path -LiteralPath $stage) { Assert-OwnedDirectory $stage; Remove-Item -LiteralPath $stage -Recurse -Force }
     }
-    Write-Host 'Installation succeeded. Fully quit Codex, then open it from its normal icon for automatic loading.'
-    Write-Host 'Open windows are not taken over. If the safety checks skip automatic loading, fully quit Codex and run Launch.cmd.'
+    Write-Host 'Installation succeeded. Return to Codex Usage Badge.cmd, save your work, then choose Restart Codex with Badge.'
     if ($oldMoved) { Write-Host "Previous version backup: $backup" }
 }
 function Get-DebugPages {
@@ -432,7 +431,7 @@ function Get-DebugPages {
 }
 function Launch-Badge {
     Assert-OwnedDirectory $script:InstallRoot
-    if (!(Test-Path -LiteralPath $script:ConfigPath)) { throw 'Not installed. Run Install.cmd first.' }
+    if (!(Test-Path -LiteralPath $script:ConfigPath)) { throw 'Not installed. Choose Install or update from Codex Usage Badge.cmd first.' }
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $null
     if (@(Get-DebugPages).Count -gt 0) { return }
     Stop-Worker
@@ -479,7 +478,7 @@ function Show-Status {
     if ($config) {
         foreach ($key in @('AppExe','NodeExe','CodexBin','CodexHome')) { Write-Host ($key + '：' + $config.$key) }
         try { Write-Host (Invoke-Hidden $config.NodeExe @((Join-Path $script:InstallRoot 'bridge.cjs'),'status')) }
-        catch { Write-Host 'No connected Codex window. Fully quit it and launch from the normal icon; use Launch.cmd if needed.' }
+        catch { Write-Host 'No connected Codex window. Save your work, then choose Restart Codex with Badge from Codex Usage Badge.cmd.' }
     }
 }
 

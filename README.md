@@ -12,7 +12,7 @@
 
 | Jump to | What you will find |
 | --- | --- |
-| [Install on Windows](#install-on-windows) | The current Windows download and first-run steps |
+| [Install on Windows](#install-on-windows) | The one-file menu and safe restart flow |
 | [What it adds](#what-it-adds) | Usage, project colors, and Token indicators |
 | [Privacy and safety](#privacy-and-safety) | Exactly what stays local and why |
 | [Build from source](#build-from-source) | Reproducible build and test commands |
@@ -43,17 +43,32 @@ The badge deliberately avoids a second navigation system. Usage is a compact car
 
 ## Install on Windows
 
-1. Download [**CodexUsageBadge-Windows-0.11.5.zip**](https://github.com/ChaiBoonHong/codex-usage-badge/releases/download/v0.11.5-windows/CodexUsageBadge-Windows-0.11.5.zip).
+1. Download [**CodexUsageBadge-Windows-0.11.6.zip**](https://github.com/ChaiBoonHong/codex-usage-badge/releases/download/v0.11.6-windows/CodexUsageBadge-Windows-0.11.6.zip).
 2. Extract the ZIP completely.
 3. Open and sign in to the Codex desktop app once.
-4. Run `START-HERE.cmd` from the extracted folder.
-5. Fully quit Codex, including its tray process, then reopen it from the normal Codex icon.
+4. Double-click **`Codex Usage Badge.cmd`**.
+5. Choose **Install or update**.
+6. Save your Codex work when asked, then type `C` to restart Codex with the Badge connection.
 
-The Windows helper waits for a new, untouched foreground launch. It may briefly close and reopen Codex once to add its local connection. It does not take over windows that are already in use.
+The restart is guarded. It acts only when exactly one verified Codex window is open, requests a normal Windows shutdown, and never force-closes the app.
 
-If automatic startup does not attach, open `Launch.cmd` while exactly one Codex window is open. It requests a normal exit for that one verified window, reopens it through Windows app activation, and then starts the badge.
+## One-file menu
 
-Need help? Open [Windows instructions](docs/windows.md) or run `Status.cmd` from the extracted folder.
+| Menu option | Use it when | Result |
+| --- | --- | --- |
+| **Install or update** | First use or installing a newer release | Installs the local worker, then asks before restarting Codex. |
+| **Restart Codex with Badge** | The badge did not attach automatically | Guardedly restarts one open Codex window with the local connection. |
+| **Check status** | Usage is missing or the badge is not visible | Shows worker, startup-monitor, runtime, and connection details. |
+| **Uninstall** | You no longer want the Badge | Removes Badge-owned files and shortcuts; Codex, chats, and sign-in remain. |
+| **Exit** | You are finished | Closes the menu without changing anything. |
+
+## Quick troubleshooting
+
+- **Restart was refused:** close extra Codex windows, leave one open, save work, then choose **Restart Codex with Badge**.
+- **Worker will not update:** choose **Check status**. If the old worker does not stop, sign out of Windows and run **Install or update** again.
+- **Usage is unavailable:** confirm Codex has been opened and signed in at least once, then use **Check status**.
+
+Read the detailed [Windows instructions](docs/windows.md) for requirements and technical diagnostics.
 
 ## Privacy and safety
 
@@ -98,7 +113,7 @@ tests/     Unit, layout, lifecycle, and release-safety checks
 
 ## Status
 
-- **Windows v0.11.5** — Guarded manual recovery for Microsoft Store Codex when automatic startup does not attach.
+- **Windows v0.11.6** — One-file menu with an explicit save-work confirmation before restart.
 - **macOS v0.9.2** — Existing release remains available; it is not changed by this Windows release.
 
 This is an independent MIT-licensed project maintained by [CHAI BOON HONG](https://github.com/ChaiBoonHong) and is not affiliated with OpenAI.

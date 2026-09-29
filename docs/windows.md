@@ -1,31 +1,32 @@
 # Windows guide
 
-## Install in one step
+## One-file menu
 
 1. Download and fully extract the Windows ZIP.
-2. Open the extracted folder and double-click **`START-HERE.cmd`**.
+2. Open the extracted folder and double-click **`Codex Usage Badge.cmd`**.
 3. Open and sign in to Codex once if you have not already.
-4. When installation finishes, fully quit Codex, including its tray process, then reopen it from the normal Codex icon.
+4. Choose **Install or update**.
+5. Save your Codex work, then type `C` when the menu asks whether it can restart Codex.
 
 The installer uses the current user account only. It installs to `%LOCALAPPDATA%\CodexUsageBadge`, adds a background Startup shortcut, and does not require administrator privileges.
 
-## What happens on the next Codex launch
+## What happens during restart
 
-The background helper watches for one new foreground Codex window that has not received input. It can request a normal exit and reopen it with the badge’s local connection. The window may briefly disappear and return.
+The menu requests a normal exit and reopens Codex with the Badge’s local connection. The window may briefly disappear and return.
 
-It skips the attempt when you have already clicked, typed, scrolled, opened multiple instances, launched with a file or link, already use the local port, or decline the normal exit request. It never force-closes Codex.
+It refuses the attempt when multiple Codex windows are open, the local port is already in use, or Codex declines the normal exit request. It never force-closes Codex.
 
 For Microsoft Store installs, the helper uses Windows app activation rather than directly executing a protected `WindowsApps` executable.
 
-## Commands in the extracted folder
+## Menu actions
 
-| File | Purpose |
+| Menu option | Purpose |
 | --- | --- |
-| `START-HERE.cmd` | The recommended installer entry point. |
-| `Install.cmd` | Install or update the badge. |
-| `Status.cmd` | Show the worker, startup monitor, and current connection state. |
-| `Launch.cmd` | Guardedly restart one open Codex window with the badge connection, including Microsoft Store installs. |
-| `Uninstall.cmd` | Remove the badge, its Startup shortcut, and its local UI settings. |
+| **Install or update** | Install or update the Badge, then prompt before restart. |
+| **Restart Codex with Badge** | Guardedly restart one open Codex window with the Badge connection, including Microsoft Store installs. |
+| **Check status** | Show the worker, startup monitor, and current connection state. |
+| **Uninstall** | Remove the Badge, its Startup shortcut, and its local UI settings. |
+| **Exit** | Close the menu without changing anything. |
 
 ## Requirements
 
@@ -48,9 +49,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\manage-windows.ps1 -Ac
 
 ## Troubleshooting
 
-- **No badge after launch:** run `Status.cmd`, fully quit Codex, reopen it from the normal icon, and wait before interacting.
+- **No badge after launch:** choose **Check status**, then save work and choose **Restart Codex with Badge**.
 - **Node or CLI not found:** open Codex once; otherwise install Node.js 24 LTS or provide the matching explicit path.
-- **Worker did not take over:** `skipped-active-or-background` means the window was already active or used; `quit-refused` means Codex rejected the normal exit request; `skipped-cooldown` prevents retry loops for two minutes. With exactly one Codex window open, run `Launch.cmd` for a guarded manual recovery.
+- **Restart was refused:** close extra Codex windows, leave one window open, then choose **Restart Codex with Badge**.
 - **Usage unavailable:** confirm that the desktop app and CLI use the same signed-in account and data directory.
 - **Gray Token dot:** the current session has no local record, or it is a WSL, remote, or cloud session.
 

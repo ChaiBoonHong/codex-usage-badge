@@ -16,7 +16,7 @@ Build a Windows-only archive:
 python3 scripts/build_release.py --platform Windows
 ```
 
-The Windows version comes from `package.json` `windowsVersion`. The builder writes the ZIP and `SHA256SUMS.txt` to `dist/`, uses an allowlist, and replaces the generated agent version inside the Windows archive.
+The Windows version comes from `package.json` `windowsVersion`. The builder writes the ZIP and `SHA256SUMS.txt` to `dist/`, uses an allowlist, packages one user-facing `Codex Usage Badge.cmd` menu, and replaces the generated agent version inside the Windows archive.
 
 Publish Windows builds as normal GitHub releases. Do not mark them as prereleases unless the user explicitly requests a prerelease.
 

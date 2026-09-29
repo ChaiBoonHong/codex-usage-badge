@@ -36,13 +36,9 @@ for target_platform in platforms:
             generated[filename] = f'#!/bin/bash\nexec /bin/bash "$(dirname "$0")/scripts/mac-entry.sh" {action}\n'.encode()
             modes[filename] = 0o755
     else:
-        mapping.update({'manage-windows.ps1':'windows/manage-windows.ps1','bridge.cjs':'windows/bridge.cjs'})
+        mapping.update({'Codex Usage Badge.cmd':'windows/Codex Usage Badge.cmd','manage-windows.ps1':'windows/manage-windows.ps1','bridge.cjs':'windows/bridge.cjs'})
         for filename in ['controller.cjs','manual-launch.cjs','windows.cjs','windows-bridge.ps1','windows-native.cs']:
             mapping['startup/'+filename] = 'startup/'+filename
-        for action in ['Install','Launch','Status','Uninstall']:
-            text = f'@echo off\nsetlocal\n"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0manage-windows.ps1" -Action {action}\nset "BADGE_EXIT=%ERRORLEVEL%"\nif not "%BADGE_EXIT%"=="0" echo Operation failed. See the message above.\necho.\necho Press any key to exit.\npause >nul\nexit /b %BADGE_EXIT%\n'
-            generated[action+'.cmd'] = text.replace('\n','\r\n').encode('ascii')
-        generated['START-HERE.cmd'] = b'@echo off\r\ncall "%~dp0Install.cmd"\r\nexit /b %ERRORLEVEL%\r\n'
     payload = {file:(root / source).read_bytes() for file,source in mapping.items()}
     payload.update(generated)
     if target_platform == 'Windows':
@@ -54,6 +50,8 @@ for target_platform in platforms:
             if filename.endswith('.ps1'):
                 ps = payload[filename].decode('utf-8-sig').replace('\r\n','\n')
                 payload[filename] = b'\xef\xbb\xbf' + ps.replace('\n','\r\n').encode('utf-8')
+            elif filename.endswith('.cmd'):
+                payload[filename] = payload[filename].replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')
     payload['SHA256SUMS.txt'] = ''.join(f'{hashlib.sha256(data).hexdigest()}  {file}\n' for file,data in sorted(payload.items())).encode()
     archive = dist / (name+'.zip')
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
