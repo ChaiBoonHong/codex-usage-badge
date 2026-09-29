@@ -390,7 +390,7 @@ function Install-Badge($Overrides) {
     try {
         [void][IO.Directory]::CreateDirectory($stage)
         Write-Utf8 (Join-Path $stage '.codex-usage-badge-owner') $script:Owner
-        foreach ($name in @('manage-windows.ps1','agent.cjs','bridge.cjs','Install.cmd','Launch.cmd','Status.cmd','Uninstall.cmd','README-Windows.md')) {
+        foreach ($name in @('manage-windows.ps1','agent.cjs','bridge.cjs','Install.cmd','Launch.cmd','Status.cmd','Uninstall.cmd')) {
             Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stage $name)
         }
         [void][IO.Directory]::CreateDirectory((Join-Path $stage 'startup'))

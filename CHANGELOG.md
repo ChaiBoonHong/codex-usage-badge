@@ -1,5 +1,9 @@
 # Changelog
 
+## Windows 0.11.4
+
+- Fixed installation from the slim package by removing the obsolete `README-Windows.md` copy step.
+
 ## Windows 0.11.3 (pre-release)
 
 - Kept `START-HERE.cmd` and `Install.cmd` in one terminal window.

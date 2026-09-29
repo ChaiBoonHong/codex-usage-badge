@@ -43,7 +43,7 @@ The badge deliberately avoids a second navigation system. Usage is a compact car
 
 ## Install on Windows
 
-1. Download [**CodexUsageBadge-Windows-0.11.3.zip**](https://github.com/ChaiBoonHong/codex-usage-badge/releases/download/v0.11.3-windows/CodexUsageBadge-Windows-0.11.3.zip).
+1. Download [**CodexUsageBadge-Windows-0.11.4.zip**](https://github.com/ChaiBoonHong/codex-usage-badge/releases/download/v0.11.4-windows/CodexUsageBadge-Windows-0.11.4.zip).
 2. Extract the ZIP completely.
 3. Open and sign in to the Codex desktop app once.
 4. Run `START-HERE.cmd` from the extracted folder.
@@ -96,7 +96,7 @@ tests/     Unit, layout, lifecycle, and release-safety checks
 
 ## Status
 
-- **Windows v0.11.3** — Single-window installer, Store-safe launch behavior, English documentation, and compact sidebar layout.
+- **Windows v0.11.4** — Slim-package installer fix, single-window installation, Store-safe launch behavior, and compact sidebar layout.
 - **macOS v0.9.2** — Existing release remains available; it is not changed by this Windows release.
 
 This is an independent MIT-licensed project and is not affiliated with OpenAI.
