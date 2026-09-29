@@ -68,6 +68,12 @@ The restart is guarded. After you save work and type `C`, it closes only one ver
 - **Worker will not update:** choose **Check status**. If the old worker does not stop, sign out of Windows and run **Install or update** again.
 - **Usage is unavailable:** confirm Codex has been opened and signed in at least once, then use **Check status**.
 
+## Local logs
+
+- `Codex Usage Badge.log` is created beside the menu file and records menu choices, confirmations, and action outcomes.
+- `%LOCALAPPDATA%\CodexUsageBadge\logs\events.log` records installer, restart, status, and worker lifecycle steps.
+- Logs contain step names and outcomes only; they do not contain chats, credentials, or account data.
+
 Read the detailed [Windows instructions](docs/windows.md) for requirements and technical diagnostics.
 
 ## Privacy and safety
@@ -113,7 +119,7 @@ tests/     Unit, layout, lifecycle, and release-safety checks
 
 ## Status
 
-- **Windows v0.11.10** — Confirmed menu restart closes and relaunches the verified Codex process when it is already connected.
+- **Windows v0.11.11** — Local step logging for the menu and Badge lifecycle.
 - **macOS v0.9.2** — Existing release remains available; it is not changed by this Windows release.
 
 This is an independent MIT-licensed project maintained by [CHAI BOON HONG](https://github.com/ChaiBoonHong) and is not affiliated with OpenAI.

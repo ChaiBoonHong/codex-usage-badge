@@ -25,6 +25,7 @@ Assert ($run -notmatch 'Launch-Badge|\$config.AppExe\s+-ArgumentList|\.focus\(|A
 Assert ($run -match 'WindowStyle Hidden' -and $run -match 'CODEX_BADGE_STOP_FILE') 'hidden child and graceful stop'
  $launch = $ast.Find({param($a) $a -is [Management.Automation.Language.FunctionDefinitionAst] -and $a.Name -eq 'Launch-Badge'}, $true).Extent.Text
 Assert ($launch -notmatch 'Get-DebugPages') 'explicit restart never skips an already connected window'
+Assert ($ast.Find({param($a) $a -is [Management.Automation.Language.FunctionDefinitionAst] -and $a.Name -eq 'Write-Event'}, $true)) 'manager has a local event logger'
 Write-Host 'PASS PowerShell parsing, argument quoting, no background activation'
 
 $temp = Join-Path ([IO.Path]::GetTempPath()) ('badge-windows-中文 空格-' + [guid]::NewGuid().ToString('N'))

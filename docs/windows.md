@@ -55,4 +55,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\manage-windows.ps1 -Ac
 - **Usage unavailable:** confirm that the desktop app and CLI use the same signed-in account and data directory.
 - **Gray Token dot:** the current session has no local record, or it is a WSL, remote, or cloud session.
 
+## Logs
+
+`Codex Usage Badge.log` is beside the menu file. Lifecycle events are in `%LOCALAPPDATA%\CodexUsageBadge\logs\events.log`. Both files record action steps and outcomes without chat content, credentials, or account data.
+
 Uninstall keeps your Codex app, account, and chats intact. The installer retains named backup folders such as `CodexUsageBadge.backup-*` and `CodexUsageBadge.uninstalled-*`; remove them yourself when they are no longer needed.

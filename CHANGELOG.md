@@ -1,5 +1,9 @@
 # Changelog
 
+## Windows 0.11.11
+
+- Added local step logs for menu choices, install/update, restart, status, worker lifecycle, and uninstall.
+
 ## Windows 0.11.10
 
 - Fixed confirmed restart rejecting the verified Codex process after it was already launched with the Badge debug port.
