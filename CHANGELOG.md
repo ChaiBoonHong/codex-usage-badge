@@ -1,6 +1,6 @@
 # Changelog
 
-## Windows 0.10.2 (pre-release)
+## Windows 0.11.1 (pre-release)
 
 - Added `START-HERE.cmd` as the recommended one-click Windows installer entry point.
 - Translated the release documentation and Windows installation flow to English.
