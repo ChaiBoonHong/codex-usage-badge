@@ -1,11 +1,11 @@
-# 隐私与安全
+# Privacy and security
 
-统计在本机处理，无遥测或数据上传。额度使用客户端已有登录状态查询；Token 仅读取会话 ID 和累计数值，不读取聊天正文，也不要求提供 API Key、Cookie 或访问令牌。
+All badge processing stays on your device. The badge reads subscription usage through the Codex CLI’s existing signed-in state and reads only local session IDs and cumulative Token values. It does not read chat bodies, upload telemetry, or request API keys, cookies, or access tokens.
 
-启动助手读取目标应用的进程信息和最近输入时间，用于避免打断操作；不读取按键内容或截图。Windows 启动参数只用于区分主进程、调试参数和特殊启动，不写入日志。仅对新启动且尚未操作的前台实例请求系统正常退出；不启用 Restart Manager 的强制终止选项，也不发送全局键盘输入。设置和日志保存在当前用户目录。分享诊断结果前请移除个人路径与账号信息。
+The startup helper checks process state and recent input timing to avoid interrupting work. It does not record keystrokes, screenshots, mouse coordinates, or input content. It only requests a normal exit for one new, untouched foreground instance and never uses forced Restart Manager shutdown or global keyboard injection.
 
-插件使用本机调试接口 `127.0.0.1:39222`。能访问该端口的其他本机程序也可能控制客户端，因此请勿将端口转发到网络。
+The badge uses the local debugging endpoint `127.0.0.1:39222`. Other programs on your computer that can reach that port may be able to control Codex, so never forward the port to a network.
 
-发布包使用文件白名单构建，并检查凭据、个人路径与数据文件。只包含项目代码、自行编译的启动助手、文档、封面和校验清单，不包含客户端二进制或用户数据。
+Release archives use an allowlist and are scanned for credentials, personal paths, and data files. They contain project code, compiled startup helpers, documentation, artwork, and checksums—not Codex binaries or user data.
 
-安全问题请优先通过 GitHub 的私密漏洞报告提交，避免在公开 Issue 中附上凭据或聊天内容。
+Report security issues through GitHub private vulnerability reporting. Do not include credentials, chats, or full diagnostic logs in a public issue.

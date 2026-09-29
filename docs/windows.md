@@ -1,47 +1,57 @@
-# Windows 使用说明
+# Windows guide
 
-## 原图标自动加载（Windows 0.10.0 预发布）
+## Install in one step
 
-完整解压 Windows ZIP 后，运行 `Install.cmd`。首次安装前先打开并登录客户端，使内置运行组件准备好；安装后从托盘或菜单完全退出，再使用原来的 Codex 图标打开。安装时已经打开的窗口会保留。
+1. Download and fully extract the Windows ZIP.
+2. Open the extracted folder and double-click **`START-HERE.cmd`**.
+3. Open and sign in to Codex once if you have not already.
+4. When installation finishes, fully quit Codex, including its tray process, then reopen it from the normal Codex icon.
 
-后台观察到刚刚启动、位于前台且尚未操作的客户端时，会请求一次正常退出，再带用量条连接参数重开。窗口可能短暂消失后重新出现。若已经操作、存在多个实例、启动参数包含链接/文件、端口被占用或客户端拒绝退出，本次自动加载会跳过。关闭窗口但仍驻留托盘的客户端不属于新启动。
+The installer uses the current user account only. It installs to `%LOCALAPPDATA%\CodexUsageBadge`, adds a background Startup shortcut, and does not require administrator privileges.
 
-Microsoft Store 版从原进程读取应用标识，通过 Windows 应用激活接口携带连接参数重开，避免直接执行 `WindowsApps` 内文件时出现“拒绝访问”。商店激活可能直接显示窗口；普通桌面安装仍使用隐藏进程启动，再按焦点检查显示窗口。
+## What happens on the next Codex launch
 
-Windows 通过 Raw Input 观察实际操作：点击、滚轮或按键会取消本次接管，单纯移动鼠标和松开启动按键不会。后台只检查事件类别和时间，不读取或保存按键内容、文字或鼠标坐标。
+The background helper watches for one new foreground Codex window that has not received input. It can request a normal exit and reopen it with the badge’s local connection. The window may briefly disappear and return.
 
-这是 Windows 预发布版本。已在 Windows 10 的已登录 Microsoft Store 客户端上验证原生激活、自动重开及额度条/项目颜色/Token 三个组件的加载；独立测试应用也已验证系统退出与拒绝行为。其他设备、任务栏入口和客户端更新后的兼容性仍需验证。旧版 v0.9.x 仍需使用独立桌面入口。
+It skips the attempt when you have already clicked, typed, scrolled, opened multiple instances, launched with a file or link, already use the local port, or decline the normal exit request. It never force-closes Codex.
 
-安装到 `%LOCALAPPDATA%\CodexUsageBadge`，创建当前用户的后台启动项，不需要管理员权限。登录 Windows 时只启动隐藏后台，等待用户打开客户端。升级会移除本项目创建的旧桌面入口，保留无关快捷方式；`Launch.cmd` 保留为手动加载入口。安装、更新、卸载具有归属检查与备份。
+For Microsoft Store installs, the helper uses Windows app activation rather than directly executing a protected `WindowsApps` executable.
 
-## 运行环境
+## Commands in the extracted folder
 
-- Windows 10/11，Windows PowerShell 5.1 或更高版本。
-- 已登录且包含 Codex CLI 的 Windows 桌面客户端。
-- Node.js 24+，需要 `node:sqlite`。自动查找客户端 Node，或使用已安装的系统 Node。
-- 原生 Windows 会话数据库。WSL 与远程环境暂不跨系统读取。
+| File | Purpose |
+| --- | --- |
+| `START-HERE.cmd` | The recommended installer entry point. |
+| `Install.cmd` | Install or update the badge. |
+| `Status.cmd` | Show the worker, startup monitor, and current connection state. |
+| `Launch.cmd` | Manually attempt a badge-enabled launch after Codex is fully closed. |
+| `Uninstall.cmd` | Remove the badge, its Startup shortcut, and its local UI settings. |
 
-`Install.cmd` / `Launch.cmd` / `Status.cmd` / `Uninstall.cmd` 仅为本次 PowerShell 进程设置执行策略，不更改注册表或企业策略。脚本没有代码签名；设备策略禁止时请联系管理员。
+## Requirements
 
-## 自定义路径
+- Windows 10 or Windows 11.
+- A signed-in Codex desktop app that includes the Codex CLI.
+- Node.js 24+ with `node:sqlite`. The installer first looks for the runtime bundled with Codex, then for a system Node installation.
+- A native Windows session. WSL and remote sessions cannot read the Windows session database.
 
-只填写需要覆盖的参数，其余自动发现。以下示例路径需要换成实际位置：
+The scripts use `ExecutionPolicy Bypass` for that process only. They do not alter the registry or your organization’s PowerShell policy. The release is not code-signed; contact your administrator if device policy blocks unsigned scripts.
+
+## Optional custom paths
+
+Supply only the values you need to override:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\manage-windows.ps1 -Action Install -AppExe 'D:\Apps\Codex\Codex.exe' -NodeExe 'D:\Tools\nodejs\node.exe' -CodexBin 'D:\Apps\Codex\resources\codex.exe' -CodexHome 'D:\CodexData'
 ```
 
-显式参数会保留，迁移后请重新指定。`CodexHome` 必须与客户端当前数据目录一致，否则可能读不到额度或 Token。
+`CodexHome` must be the data directory used by the desktop app, or usage and Token information may be unavailable.
 
-## 故障处理
+## Troubleshooting
 
-- **未找到 Node / CLI**：先运行客户端一次；安装 Node.js 24 LTS；必要时显式指定路径。
-- **已运行但不能连接**：先查看 `Status.cmd` 中的自动加载状态。`skipped-active-or-background` 表示启动后已有操作或窗口在后台；`quit-refused` 表示系统退出请求被拒绝；`skipped-cooldown` 表示两分钟内已经尝试过一次。完全退出后可用 `Launch.cmd` 手动加载。
-- **原图标没有自动加载**：确认后台运行且 Windows 没有禁用它的启动项。等待两分钟后完全退出，再从原图标打开；开始操作前让窗口完成重开。
-- **更新后失效**：重跑安装器或 `Launch.cmd`，自动寻找更新后的路径。监测器不会主动接管已经打开的更新后窗口。
-- **只有额度不可用**：确认使用支持额度查询的账号，且 CLI 和客户端的登录/数据目录一致。
-- **Token 灰色**：可能没有本地记录，或当前是 WSL、远程、云端会话。
+- **No badge after launch:** run `Status.cmd`, fully quit Codex, reopen it from the normal icon, and wait before interacting.
+- **Node or CLI not found:** open Codex once; otherwise install Node.js 24 LTS or provide the matching explicit path.
+- **Worker did not take over:** `skipped-active-or-background` means the window was already active or used; `quit-refused` means Codex rejected the normal exit request; `skipped-cooldown` prevents retry loops for two minutes.
+- **Usage unavailable:** confirm that the desktop app and CLI use the same signed-in account and data directory.
+- **Gray Token dot:** the current session has no local record, or it is a WSL, remote, or cloud session.
 
-卸载时若客户端可连接，立即移除界面组件并清理颜色设置；否则组件会在下次完全重启后消失，颜色配置可能保留在客户端存储中。备份目录名以 `CodexUsageBadge.backup-` 或 `.uninstalled-` 开头，由用户自行决定何时删除。
-
-CI 使用临时应用验证 Windows 进程、快捷方式迁移、后台停止、安装回滚、正常系统退出和拒绝退出。启动助手使用 Restart Manager 的非强制退出请求；应用可通过 Windows 的退出询问拒绝，不发送全局快捷键。Windows 可能拒绝后台进程恢复焦点，此时不会强行抢占焦点。长期焦点行为仍需更多设备验证。
+Uninstall keeps your Codex app, account, and chats intact. The installer retains named backup folders such as `CodexUsageBadge.backup-*` and `CodexUsageBadge.uninstalled-*`; remove them yourself when they are no longer needed.

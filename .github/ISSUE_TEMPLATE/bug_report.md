@@ -1,17 +1,20 @@
 ---
-name: Bug report / 问题反馈
-about: Report a reproducible problem without sharing private data
+name: Bug report
+about: Report a reproducible Codex Usage Badge issue
 ---
 
-**系统 / OS**：
-**客户端版本 / Client version**：
-**用量条版本 / Badge version**：
-**安装方式 / Store or ordinary installation**：
+**Operating system:**
 
-**重现步骤 / Steps**：
+**Codex desktop app version:**
 
-**预期与实际 / Expected and actual**：
+**Badge version:**
 
-**脱敏后的诊断 / Redacted diagnostics**：
+**Installation type:** Microsoft Store or standard desktop installation
 
-请勿上传账号凭据、API Key、auth.json、会话数据库、完整日志或包含私人会话的截图。只提供必要的错误信息，并替换用户名和目录名称。
+**Steps to reproduce:**
+
+**Expected result and actual result:**
+
+**Redacted diagnostics:**
+
+Do not upload account credentials, API keys, `auth.json`, session databases, complete logs, or screenshots containing private chats. Share only the needed error details and replace personal names and paths.

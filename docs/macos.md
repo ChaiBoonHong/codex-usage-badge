@@ -1,33 +1,24 @@
-# macOS 安装
+# macOS guide
 
-1. 下载并解压 macOS 安装包，双击 `安装.command`。
-2. 安装完成后按 `⌘Q` 完全退出 Codex，再点击原来的应用图标，等待 5–10 秒。
+1. Download and extract the macOS ZIP.
+2. Double-click `install.command`.
+3. Fully quit Codex with <kbd>⌘</kbd> + <kbd>Q</kbd>, then reopen it from the normal app icon and wait 5–10 seconds.
 
-不再需要「Codex 用量条」独立入口。升级时重新运行安装器，旧版创建的快捷方式会自动移除。
+The installer does not modify the Codex application bundle or its signature. It installs a local helper under `~/Library/Application Support/CodexUsageBadge`.
 
-双击脚本受阻时，可在终端进入解压目录运行 `bash ./安装.command`。`诊断.command` 查看状态，`卸载.command` 移除插件。安装失败会恢复原有程序文件和后台服务。
+## Automatic loading
 
-## 自动加载
+After login, the helper waits for a newly opened, untouched Codex window. It can request one normal exit and reopen the app with the badge connection. Typing, clicking, scrolling, switching apps, an already-open work window, or a declined exit request cancels that attempt. It never force-quits Codex and waits at least two minutes before another attempt.
 
-助手在登录 macOS 后运行，没有窗口或 Dock 图标。发现刚打开的客户端缺少连接参数时，会正常请求退出并重新打开一次。因此，启动时可能短暂重开。
+## Requirements
 
-启动后立即打字、点击、滚动或切换应用，可能跳过本次加载。已经打开的工作窗口不会被处理；退出被拒绝或超时也不会强制终止。两次重开尝试至少间隔两分钟。
+The installer finds `Codex.app` or a `ChatGPT.app` bundle containing Codex. It prefers the bundled Node.js runtime. If no compatible runtime is available, install [Node.js 24 LTS](https://nodejs.org/en/download).
 
-## 环境与路径
+Use `bash ./install.command` if Finder blocks the script. Run `status.command` for diagnostics or `uninstall.command` to remove the badge.
 
-安装器查找 `Codex.app` 或包含 Codex CLI 的 `ChatGPT.app`，优先使用客户端内置的 Node.js。缺少运行环境时，安装 [Node.js 24 LTS](https://nodejs.org/en/download)。普通安装无需 Python 或编译工具。
+## Common issues
 
-自定义应用位置：
-
-```bash
-CODEX_BADGE_APP="$HOME/Apps/Codex.app" bash ./安装.command
-```
-
-插件安装在 `~/Library/Application Support/CodexUsageBadge`。客户端原应用包与签名保持不变；插件自带的启动助手使用临时签名，尚未经过 Apple 公证。
-
-## 常见情况
-
-- **重开后未显示**：完全退出，再从原图标打开，先等待几秒。连续重开时需等待两分钟冷却时间；仍不显示请运行诊断脚本。
-- **额度不可用**：确认客户端和 CLI 使用同一账号。API Key 登录不一定提供订阅额度。
-- **Token 显示灰色**：当前会话缺少本地记录。云端、SSH 和 WSL 数据不跨环境读取。
-- **客户端更新后失效**：重新运行安装器。界面或内部接口变化可能需要新版插件。
+- **Nothing appears after reopening:** fully quit Codex, reopen it from the normal icon, and wait before interacting.
+- **Usage unavailable:** ensure the app and CLI use the same account. API-key sign-in may not provide subscription usage.
+- **Token dot is gray:** the current session has no local record, or it is a cloud, SSH, or WSL session.
+- **An app update broke the badge:** rerun the installer after the update.

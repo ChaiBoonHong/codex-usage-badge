@@ -1,42 +1,37 @@
-# 更新记录
+# Changelog
+
+## Windows 0.10.2 (pre-release)
+
+- Added `START-HERE.cmd` as the recommended one-click Windows installer entry point.
+- Translated the release documentation and Windows installation flow to English.
+- Kept the compact English UI redesign from Windows 0.10.1.
 
 ## Windows 0.10.1 (pre-release)
 
-- Redesigned the badge for a quieter sidebar: compact usage cards and small circular Token markers.
+- Redesigned the badge for a quieter sidebar with compact usage cards and small circular Token markers.
 - Switched badge labels, tooltips, project-color controls, and runtime messages to English.
-- Improved English Token formatting with K, M, and B units.
+- Added English K, M, and B Token formatting.
 
-## macOS 0.9.2（预发布）
+## macOS 0.9.2 (pre-release)
 
-- 修复 GPT 模式下侧栏 Token 色块换行、与会话标题错位的问题。
-- 色块与标题保持同排居中，长标题正常缩略，保留行高、状态点、时间和第二行说明。
-- 补充两种模式、深浅主题和不同侧栏宽度的布局回归测试。
-- 本次仅发布 macOS 安装包；Windows 下载仍为 v0.10.0。
+- Fixed GPT sidebar Token marker wrapping and alignment with chat titles.
+- Preserved row height, metadata, long-title truncation, and secondary text across light and dark themes.
+- Added layout regression coverage for both sidebar modes and multiple widths.
 
-## Windows 0.10.0（预发布）
+## Windows 0.10.0 (pre-release)
 
-- 仅更新 Windows；macOS 保持 v0.9.1。Windows 独立版本号记录在 `package.json` 的 `windowsVersion`。
-- 安装后支持从原生 Codex 图标打开；后台对新启动且尚未操作的前台窗口请求一次正常重开。
-- 使用 Windows 应用激活接口重开 Microsoft Store 版，修复直接执行商店程序的“拒绝访问”。
-- 输入保护区分鼠标移动与实际操作：点击、滚轮和按键会取消自动接管，单纯移动鼠标不会。
-- 升级移除本插件旧桌面入口，保留原生图标和其他快捷方式；增加后台就绪检查、状态诊断和冷却防重试。
-- 保留 v0.9.1 的浅色/深色额度圆环、项目配色和 Token 样式。
-- 已完成本机 Windows 10 / Microsoft Store Codex 的原生激活、自动重开及三个组件注入验收；其他设备和客户端更新后仍需验证。
+- Added normal-icon startup and guarded automatic relaunch for new, untouched foreground windows.
+- Used Windows app activation for Microsoft Store installs instead of direct protected executable launches.
+- Added raw-input safety checks, startup diagnostics, cooldown protection, and rollback coverage.
 
 ## 0.9.1
 
-- 优化浅色主题：额度条采用浅灰白底和深色文字，圆环颜色更清晰。
-- 调整浅色主题下的 Token 色块与文件夹颜色，提高辨识度。
-- 配色跟随客户端主题切换，支持系统主题与 Plus 双圆环。
+- Improved light-theme usage rings and Token/project-color contrast.
 
 ## 0.9.0
 
-- macOS 支持从原应用图标启动并自动加载插件，不再创建独立入口。
-- 升级时清理旧启动器及其 Dock、启动台图标。
-- 增加启动保护：已有窗口、用户操作、端口占用和退出超时均有检查，防止循环重开。
-- 精简项目首页，按系统拆分安装说明。
-- Windows 保留现有桌面入口，安装方式不变。
+- Added automatic startup for macOS and safer launch guards.
 
 ## 0.8.0
 
-首次公开预发布，提供额度圆环、项目颜色和会话 Token 显示，支持 macOS 与 Windows 安装包。
+- First public pre-release with usage rings, project colors, and Token indicators.

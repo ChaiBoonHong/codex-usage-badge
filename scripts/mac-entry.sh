@@ -16,12 +16,12 @@ do
   fi
 done
 if [ -z "$badge_node" ]; then
-  echo "未找到 Node.js 24+。请先打开客户端一次，或安装 Node.js 24 LTS 后重试。"
+  echo "Node.js 24+ was not found. Open the desktop app once or install Node.js 24 LTS, then try again."
   badge_result=1
 else
   "$badge_node" ./manage.cjs "$1"
   badge_result=$?
 fi
 echo
-read -r -p "按回车关闭…" _ || true
+read -r -p "Press Enter to close…" _ || true
 exit "$badge_result"

@@ -32,7 +32,7 @@ for target_platform in platforms:
         mapping.update({'manage.cjs':'manage.cjs','scripts/mac-entry.sh':'scripts/mac-entry.sh','macos/shortcuts.cjs':'macos/shortcuts.cjs','macos/startup/bridge':'.devtools/macos-startup-bridge','macos/startup/controller.cjs':'macos/startup/controller.cjs','macos/startup/watch.cjs':'macos/startup/watch.cjs'})
         modes['scripts/mac-entry.sh'] = 0o755
         modes['macos/startup/bridge'] = 0o755
-        for filename, action in [('安装.command','install'),('诊断.command','status'),('卸载.command','uninstall')]:
+        for filename, action in [('install.command','install'),('status.command','status'),('uninstall.command','uninstall')]:
             generated[filename] = f'#!/bin/bash\nexec /bin/bash "$(dirname "$0")/scripts/mac-entry.sh" {action}\n'.encode()
             modes[filename] = 0o755
     else:
@@ -42,6 +42,7 @@ for target_platform in platforms:
         for action in ['Install','Launch','Status','Uninstall']:
             text = f'@echo off\nsetlocal\n"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0manage-windows.ps1" -Action {action}\nset "BADGE_EXIT=%ERRORLEVEL%"\nif not "%BADGE_EXIT%"=="0" echo Operation failed. See the message above.\npause\nexit /b %BADGE_EXIT%\n'
             generated[action+'.cmd'] = text.replace('\n','\r\n').encode('ascii')
+        generated['START-HERE.cmd'] = b'@echo off\r\nstart "" /wait "%~dp0Install.cmd"\r\n'
     payload = {file:(root / source).read_bytes() for file,source in mapping.items()}
     payload.update(generated)
     if target_platform == 'Windows':

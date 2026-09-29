@@ -16,7 +16,7 @@ function resolveCodexBin(explicit, appPath = '/Applications/ChatGPT.app', platfo
     `${appPath}/Contents/Resources/codex`
   ];
   const found = candidates.find(isExecutableFile);
-  if (!found) throw new Error('找不到客户端内置 Codex 可执行程序，请检查客户端安装');
+  if (!found) throw new Error('Could not find the bundled Codex executable. Check the desktop app installation.');
   return found;
 }
 function windowsCodexCandidates(appPath) {

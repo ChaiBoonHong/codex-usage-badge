@@ -24,7 +24,7 @@ const api=require('../agent.cjs');
     };
     vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../windows/bridge.cjs'),'utf8'),sandbox);
     const {main,evaluate}=sandbox.module.exports;
-    for(const ws of ['ws://example.com:39222/test','ws://127.0.0.1:9999/test','wss://127.0.0.1:39222/test'])await assert.rejects(evaluate({webSocketDebuggerUrl:ws},'1'),/非本机/);
+    for(const ws of ['ws://example.com:39222/test','ws://127.0.0.1:9999/test','wss://127.0.0.1:39222/test'])await assert.rejects(evaluate({webSocketDebuggerUrl:ws},'1'),/non-local/);
     await main('status');
     assert.equal(output[0].windows.length,2);
     for(const item of output[0].windows)assert.deepEqual(JSON.parse(item),{quota:true,folderColors:true,threadTokens:true});
@@ -36,7 +36,7 @@ const api=require('../agent.cjs');
       assert.equal(await page.locator('#editor').evaluate(el=>el===document.activeElement),true);
     }
     await main('cleanup'); // repeated cleanup is safe
-    await assert.rejects(main('invalid-action'),/用法/);
+    await assert.rejects(main('invalid-action'),/Usage/);
     console.log('PASS Windows bridge over real isolated Chromium CDP: multiwindow status/cleanup, preserve unrelated storage/focus, repeated cleanup, reject external endpoints and overlays');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

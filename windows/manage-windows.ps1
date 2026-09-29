@@ -42,11 +42,11 @@ function Assert-OwnedDirectory([string]$Path) {
     if (!$item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
         !(Test-Path -LiteralPath $marker -PathType Leaf) -or
         (Get-Content -LiteralPath $marker -Raw -Encoding UTF8).Trim() -ne $script:Owner) {
-        throw "目录已存在且不属于本插件，未修改：$Path"
+        throw "The existing directory is not owned by Codex Usage Badge; it was not changed: $Path"
     }
 }
 function Initialize-Context {
-    if ($env:OS -ne 'Windows_NT') { throw '此安装器仅供 Windows 使用。' }
+    if ($env:OS -ne 'Windows_NT') { throw 'This installer is for Windows only.' }
     $script:InstallRoot = Join-Path $env:LOCALAPPDATA 'CodexUsageBadge'
     $script:ManagerPath = Join-Path $script:InstallRoot 'manage-windows.ps1'
     $script:ConfigPath = Join-Path $script:InstallRoot 'config.json'
@@ -63,7 +63,7 @@ function Initialize-Context {
         finally { $hash.Dispose() }
         $script:MutexName += '.' + $suffix
     }
-    $script:DesktopLink = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Codex 用量条.lnk'
+    $script:DesktopLink = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Codex Usage Badge.lnk'
     $script:StartupLink = Join-Path ([Environment]::GetFolderPath('Startup')) 'Codex Usage Badge Background.lnk'
 }
 function Invoke-Hidden([string]$Exe, [string[]]$Arguments, [int]$TimeoutMs = 12000) {
@@ -81,9 +81,9 @@ function Invoke-Hidden([string]$Exe, [string[]]$Arguments, [int]$TimeoutMs = 120
         [void]$proc.Start()
         $out = $proc.StandardOutput.ReadToEndAsync()
         $err = $proc.StandardError.ReadToEndAsync()
-        if (!$proc.WaitForExit($TimeoutMs)) { $proc.Kill(); throw '命令响应超时' }
+        if (!$proc.WaitForExit($TimeoutMs)) { $proc.Kill(); throw 'Command response timed out' }
         $result = [pscustomobject]@{ ExitCode = $proc.ExitCode; Output = $out.Result; Error = $err.Result }
-        if ($result.ExitCode -ne 0) { throw "命令退出码 $($result.ExitCode)：$Exe" }
+        if ($result.ExitCode -ne 0) { throw "Command exited with code $($result.ExitCode): $Exe" }
         return $result.Output.Trim()
     } finally { $proc.Dispose() }
 }
@@ -155,8 +155,8 @@ function Select-Runtime([string[]]$Candidates, [string]$Kind) {
             return (Get-Item -LiteralPath $file).FullName
         } catch {}
     }
-    if ($Kind -eq 'Node') { throw '未找到可运行的 Node.js 24+（需 node:sqlite）。请先运行一次客户端，或安装 Node.js 24 LTS，再运行 Install.cmd。' }
-    throw '未找到可运行的 Codex CLI。请先打开客户端一次，或使用 -CodexBin 指定客户端内置的 codex.exe。'
+    if ($Kind -eq 'Node') { throw 'No usable Node.js 24+ runtime with node:sqlite was found. Open Codex once or install Node.js 24 LTS, then rerun Install.cmd.' }
+    throw 'No usable Codex CLI was found. Open Codex once or use -CodexBin to specify its bundled codex.exe.'
 }
 function Resolve-Configuration($Saved, $Overrides) {
     $custom = [ordered]@{}
@@ -168,7 +168,7 @@ function Resolve-Configuration($Saved, $Overrides) {
     $apps = @(Get-AppCandidates $Saved)
     if ($custom.AppExe) { $apps = @($custom.AppExe) }
     $selectedApp = $apps | Where-Object { Test-DesktopExecutable $_ } | Select-Object -First 1
-    if (!$selectedApp) { throw '未找到 Windows Codex/ChatGPT 客户端。请先安装并运行客户端，或用 -AppExe 指定主程序。' }
+    if (!$selectedApp) { throw 'No Windows Codex/ChatGPT desktop app was found. Install and open it once, or use -AppExe to specify the executable.' }
     $nodes = @(Get-RuntimeCandidates $selectedApp 'Node' $Saved)
     $bins = @(Get-RuntimeCandidates $selectedApp 'CLI' $Saved)
     if ($custom.NodeExe) { $nodes = @($custom.NodeExe) }
@@ -177,7 +177,7 @@ function Resolve-Configuration($Saved, $Overrides) {
     if (!$homePath) { $homePath = Join-Path $env:USERPROFILE '.codex' }
     if (Get-Setting $Saved 'CodexHome') { $homePath = $Saved.CodexHome }
     if ($custom.CodexHome) { $homePath = $custom.CodexHome }
-    if (![IO.Path]::IsPathRooted($homePath)) { throw 'CodexHome 必须是绝对路径。' }
+    if (![IO.Path]::IsPathRooted($homePath)) { throw 'CodexHome must be an absolute path.' }
     [pscustomobject]@{
         Schema = 1; Version = $script:Version; AppExe = $selectedApp
         NodeExe = Select-Runtime $nodes 'Node'; CodexBin = Select-Runtime $bins 'CLI'
@@ -257,7 +257,7 @@ function Test-OwnedShortcut([string]$Path, [string]$Mode) {
     } catch { return $false }
 }
 function Assert-ShortcutAvailable([string]$Path, [string]$Mode) {
-    if ((Test-Path -LiteralPath $Path) -and !(Test-OwnedShortcut $Path $Mode)) { throw "快捷方式名称已被其他文件占用，未修改：$Path" }
+    if ((Test-Path -LiteralPath $Path) -and !(Test-OwnedShortcut $Path $Mode)) { throw "The shortcut name is already used by another file; it was not changed: $Path" }
 }
 function Write-Shortcut([string]$Path, [string]$Mode, [string]$Icon) {
     Assert-ShortcutAvailable $Path $Mode
@@ -280,7 +280,7 @@ function Stop-Worker {
     Write-Utf8 $script:StopPath 'stop'
     $deadline = [DateTime]::UtcNow.AddSeconds(30)
     while ((Test-Worker) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
-    if (Test-Worker) { throw '后台任务尚未退出，安装目录保持不变。请注销 Windows 后重试，或先运行 Status.cmd。' }
+    if (Test-Worker) { throw 'The background worker did not stop; the installation directory is unchanged. Sign out of Windows and retry, or run Status.cmd first.' }
 }
 function Start-Worker {
     if (Test-Worker) { return }
@@ -294,7 +294,7 @@ function Start-Worker {
         if ((Test-Worker) -and (Get-Setting $state 'State') -eq 'running') { return }
         if ((Get-Setting $state 'State') -eq 'error') { throw $state.Message }
     }
-    throw '后台启动超时，请运行 Status.cmd 查看状态。'
+    throw 'Background startup timed out. Run Status.cmd for details.'
 }
 function Run-Worker {
     Assert-OwnedDirectory $script:InstallRoot
@@ -325,12 +325,12 @@ function Run-Worker {
                 $ready = $false
                 $deadline = [DateTime]::UtcNow.AddSeconds(20)
                 while ([DateTime]::UtcNow -lt $deadline -and !(Test-Path -LiteralPath $script:StopPath)) {
-                    if ($child.HasExited -or $startup.HasExited) { throw '后台进程提前退出，请检查 logs 目录。' }
+                    if ($child.HasExited -or $startup.HasExited) { throw 'A background process exited early. Check the logs folder.' }
                     $receipt = Read-Json (Join-Path $script:InstallRoot 'startup/state.json')
                     if ((Get-Setting $receipt 'event') -eq 'watching' -and $receipt.updatedAt -ge $startedAt) { $ready = $true; break }
                     Start-Sleep -Milliseconds 200
                 }
-                if (!$ready) { throw '原生启动监测器未就绪，请检查日志。' }
+                if (!$ready) { throw 'The native startup monitor did not become ready. Check the logs.' }
                 Write-Json $script:StatePath @{ State = 'running'; Pid = $PID; AgentPid = $child.Id; StartupPid = $startup.Id; Version = $script:Version; StartedAt = [DateTime]::UtcNow.ToString('o') }
                 while (!$child.HasExited -and !$startup.HasExited) {
                     if (Test-Path -LiteralPath $script:StopPath) {
@@ -378,7 +378,7 @@ function Install-Badge($Overrides) {
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $Overrides
     foreach ($name in @('agent.cjs','bridge.cjs','startup/controller.cjs','startup/windows.cjs')) {
         $file = Join-Path $PSScriptRoot $name
-        if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "安装包不完整，请先解压 ZIP：$name" }
+        if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "The package is incomplete. Fully extract the ZIP first: $name" }
         [void](Invoke-Hidden $config.NodeExe @('--check',$file))
     }
     $stage = $script:InstallRoot + '.staging-' + [guid]::NewGuid().ToString('N')
@@ -420,9 +420,9 @@ function Install-Badge($Overrides) {
     } finally {
         if (Test-Path -LiteralPath $stage) { Assert-OwnedDirectory $stage; Remove-Item -LiteralPath $stage -Recurse -Force }
     }
-    Write-Host '安装成功。下次完全退出后，直接使用原来的 Codex 图标打开即可自动加载。'
-    Write-Host '已打开的窗口不会被接管。若自动加载被安全保护跳过，可完全退出后运行 Launch.cmd。'
-    if ($oldMoved) { Write-Host "旧版本备份：$backup" }
+    Write-Host 'Installation succeeded. Fully quit Codex, then open it from its normal icon for automatic loading.'
+    Write-Host 'Open windows are not taken over. If the safety checks skip automatic loading, fully quit Codex and run Launch.cmd.'
+    if ($oldMoved) { Write-Host "Previous version backup: $backup" }
 }
 function Get-DebugPages {
     try {
@@ -432,7 +432,7 @@ function Get-DebugPages {
 }
 function Launch-Badge {
     Assert-OwnedDirectory $script:InstallRoot
-    if (!(Test-Path -LiteralPath $script:ConfigPath)) { throw '尚未安装，请先运行 Install.cmd。' }
+    if (!(Test-Path -LiteralPath $script:ConfigPath)) { throw 'Not installed. Run Install.cmd first.' }
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $null
     Stop-Worker
     Write-Json $script:ConfigPath $config
@@ -441,18 +441,18 @@ function Launch-Badge {
     $running = @(Get-Process -Name 'Codex','ChatGPT' -ErrorAction SilentlyContinue | Where-Object {
         try { Test-DesktopExecutable $_.Path } catch { $false }
     })
-    if ($running.Count -gt 0) { throw '客户端已运行，但没有开启用量条连接。请从托盘菜单或客户端菜单完全退出，再运行 Launch.cmd。不会强制结束你的会话。' }
+    if ($running.Count -gt 0) { throw 'Codex is running without the badge connection. Fully quit it from the tray or app menu, then run Launch.cmd. Your session will not be force-closed.' }
     # Only this explicit user action starts the GUI. The Run action cannot call this function.
     Start-Process -FilePath $config.AppExe -ArgumentList '--remote-debugging-address=127.0.0.1 --remote-debugging-port=39222' | Out-Null
     for ($i = 0; $i -lt 30; $i++) {
         if (@(Get-DebugPages).Count -gt 0) { return }
         Start-Sleep -Seconds 1
     }
-    throw '客户端已启动，但调试连接尚未就绪。请运行 Status.cmd；首次登录完成后可再次运行 Launch.cmd。'
+    throw 'Codex started, but the debug connection is not ready. Run Status.cmd; after first sign-in, try Launch.cmd again.'
 }
 function Uninstall-Badge {
     Assert-OwnedDirectory $script:InstallRoot
-    if (!(Test-Path -LiteralPath $script:InstallRoot)) { Write-Host '未安装 Windows 用量条。'; return }
+    if (!(Test-Path -LiteralPath $script:InstallRoot)) { Write-Host 'Codex Usage Badge is not installed.'; return }
     Assert-ShortcutAvailable $script:StartupLink 'Run'
     Stop-Worker
     $config = Read-Json $script:ConfigPath
@@ -461,7 +461,7 @@ function Uninstall-Badge {
         $result = Invoke-Hidden $config.NodeExe @((Join-Path $script:InstallRoot 'bridge.cjs'),'cleanup')
         Write-Host $result
         $cleaned = $true
-    } catch { Write-Host '当前窗口无法连接；界面组件将在下次完全退出并重新打开客户端后消失。已保存的文件夹颜色可能保留，重新安装后可重置。' }
+    } catch { Write-Host 'The current window cannot be reached. UI components disappear after the next full restart; saved project colors may remain and can be reset by reinstalling.' }
     $links = @(Save-ShortcutState)
     $backup = $script:InstallRoot + '.uninstalled-' + [guid]::NewGuid().ToString('N')
     try {
@@ -469,21 +469,21 @@ function Uninstall-Badge {
         if (Test-OwnedShortcut $script:StartupLink 'Run') { Remove-Item -LiteralPath $script:StartupLink -Force }
         Move-Item -LiteralPath $script:InstallRoot -Destination $backup
     } catch { Restore-ShortcutState $links; throw }
-    Write-Host "已卸载。客户端、登录信息和聊天记录保持完整。可恢复备份：$backup"
+    Write-Host "Uninstalled. Your Codex app, sign-in, and chats remain intact. Recoverable backup: $backup"
 }
 function Show-Status {
-    Write-Host "Codex 用量条 Windows $script:Version"
-    Write-Host "安装目录：$script:InstallRoot"
-    Write-Host "后台运行：$(Test-Worker)"
+    Write-Host "Codex Usage Badge Windows $script:Version"
+    Write-Host "Install directory: $script:InstallRoot"
+    Write-Host "Background running: $(Test-Worker)"
     $state = Read-Json $script:StatePath
     if ($state) { Write-Host ($state | ConvertTo-Json -Compress) }
     $receipt = Read-Json (Join-Path $script:InstallRoot 'startup/state.json')
-    if ($receipt) { Write-Host ('自动加载：' + ($receipt | ConvertTo-Json -Compress)) }
+    if ($receipt) { Write-Host ('Automatic loading: ' + ($receipt | ConvertTo-Json -Compress)) }
     $config = Read-Json $script:ConfigPath
     if ($config) {
         foreach ($key in @('AppExe','NodeExe','CodexBin','CodexHome')) { Write-Host ($key + '：' + $config.$key) }
         try { Write-Host (Invoke-Hidden $config.NodeExe @((Join-Path $script:InstallRoot 'bridge.cjs'),'status')) }
-        catch { Write-Host '尚未连接客户端窗口。请完全退出后从原图标启动；必要时使用 Launch.cmd。' }
+        catch { Write-Host 'No connected Codex window. Fully quit it and launch from the normal icon; use Launch.cmd if needed.' }
     }
 }
 
@@ -495,7 +495,7 @@ try {
     if ($Action -notin @('Run','Status')) {
         $operation = New-Object Threading.Mutex($false, ($script:MutexName + '.manage'))
         try { $operationOwned = $operation.WaitOne(0) } catch [Threading.AbandonedMutexException] { $operationOwned = $true }
-        if (!$operationOwned) { throw '另一个安装、启动或卸载操作正在进行，请稍后重试。' }
+        if (!$operationOwned) { throw 'Another install, launch, or uninstall operation is already running. Try again shortly.' }
     }
     switch ($Action) {
         'Install' { Install-Badge ([pscustomobject]@{ AppExe=$AppExe; NodeExe=$NodeExe; CodexBin=$CodexBin; CodexHome=$CodexHome }) }
@@ -507,8 +507,8 @@ try {
 } catch {
     if ($Action -eq 'Launch') {
         Add-Type -AssemblyName System.Windows.Forms
-        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Codex 用量条')
-    } else { Write-Host ('错误：' + $_.Exception.Message) -ForegroundColor Red }
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Codex Usage Badge')
+    } else { Write-Host ('Error: ' + $_.Exception.Message) -ForegroundColor Red }
     exit 1
 } finally {
     if ($operationOwned) { $operation.ReleaseMutex() }
