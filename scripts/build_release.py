@@ -25,18 +25,18 @@ for target_platform in platforms:
     name = f'CodexUsageBadge-{target_platform}-{version}'
     dest = dist / name
     dest.mkdir(exist_ok=True)
-    mapping = {'agent.cjs':'agent.cjs','README.md':'README.md','CHANGELOG.md':'CHANGELOG.md','LICENSE':'LICENSE','SECURITY.md':'SECURITY.md','docs/windows.md':'docs/windows.md','docs/macos.md':'docs/macos.md','docs/development.md':'docs/development.md','assets/cover.png':'assets/cover.png'}
+    mapping = {'agent.cjs':'agent.cjs','LICENSE':'LICENSE'}
     modes = {}
     generated = {}
     if target_platform == 'macOS':
-        mapping.update({'manage.cjs':'manage.cjs','scripts/mac-entry.sh':'scripts/mac-entry.sh','macos/shortcuts.cjs':'macos/shortcuts.cjs','macos/startup/bridge':'.devtools/macos-startup-bridge','macos/startup/controller.cjs':'macos/startup/controller.cjs','macos/startup/watch.cjs':'macos/startup/watch.cjs'})
+        mapping.update({'README.md':'README.md','SECURITY.md':'SECURITY.md','docs/macos.md':'docs/macos.md','manage.cjs':'manage.cjs','scripts/mac-entry.sh':'scripts/mac-entry.sh','macos/shortcuts.cjs':'macos/shortcuts.cjs','macos/startup/bridge':'.devtools/macos-startup-bridge','macos/startup/controller.cjs':'macos/startup/controller.cjs','macos/startup/watch.cjs':'macos/startup/watch.cjs'})
         modes['scripts/mac-entry.sh'] = 0o755
         modes['macos/startup/bridge'] = 0o755
         for filename, action in [('install.command','install'),('status.command','status'),('uninstall.command','uninstall')]:
             generated[filename] = f'#!/bin/bash\nexec /bin/bash "$(dirname "$0")/scripts/mac-entry.sh" {action}\n'.encode()
             modes[filename] = 0o755
     else:
-        mapping.update({'manage-windows.ps1':'windows/manage-windows.ps1','bridge.cjs':'windows/bridge.cjs','README-Windows.md':'docs/windows.md'})
+        mapping.update({'manage-windows.ps1':'windows/manage-windows.ps1','bridge.cjs':'windows/bridge.cjs'})
         for filename in ['controller.cjs','windows.cjs','windows-bridge.ps1','windows-native.cs']:
             mapping['startup/'+filename] = 'startup/'+filename
         for action in ['Install','Launch','Status','Uninstall']:
