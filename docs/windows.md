@@ -24,7 +24,7 @@ For Microsoft Store installs, the helper uses Windows app activation rather than
 | `START-HERE.cmd` | The recommended installer entry point. |
 | `Install.cmd` | Install or update the badge. |
 | `Status.cmd` | Show the worker, startup monitor, and current connection state. |
-| `Launch.cmd` | Manually launch an ordinary desktop installation. Microsoft Store installs must use the normal Codex icon. |
+| `Launch.cmd` | Guardedly restart one open Codex window with the badge connection, including Microsoft Store installs. |
 | `Uninstall.cmd` | Remove the badge, its Startup shortcut, and its local UI settings. |
 
 ## Requirements
@@ -50,7 +50,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\manage-windows.ps1 -Ac
 
 - **No badge after launch:** run `Status.cmd`, fully quit Codex, reopen it from the normal icon, and wait before interacting.
 - **Node or CLI not found:** open Codex once; otherwise install Node.js 24 LTS or provide the matching explicit path.
-- **Worker did not take over:** `skipped-active-or-background` means the window was already active or used; `quit-refused` means Codex rejected the normal exit request; `skipped-cooldown` prevents retry loops for two minutes. For a Microsoft Store install, fully quit Codex and reopen it from the normal icon rather than running `Launch.cmd`.
+- **Worker did not take over:** `skipped-active-or-background` means the window was already active or used; `quit-refused` means Codex rejected the normal exit request; `skipped-cooldown` prevents retry loops for two minutes. With exactly one Codex window open, run `Launch.cmd` for a guarded manual recovery.
 - **Usage unavailable:** confirm that the desktop app and CLI use the same signed-in account and data directory.
 - **Gray Token dot:** the current session has no local record, or it is a WSL, remote, or cloud session.
 

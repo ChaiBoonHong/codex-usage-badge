@@ -212,6 +212,21 @@ namespace CodexUsageBadge.Startup {
                 });
             }
         }
+        public static object QuitManual(int pid,string key) {
+            var snapshot=TakeSnapshot();
+            if(Stopped()||snapshot.apps.Length!=1) return new {accepted=false,reason="multiple-or-missing-app"};
+            var app=snapshot.apps[0];
+            if(app.pid!=pid||app.key!=key||app.debugPort!=null) return new {accepted=false,reason="identity"};
+            using(var p=Process.GetProcessById(pid)) {
+                if(!Matches(p)||Identity(p)!=key) return new {accepted=false,reason="identity"};
+                applicationId=ReadApplicationId(p);
+                // ponytail: 显式启动仅重启唯一已验证的客户端；自动接管仍保留启动时间和输入保护。
+                return ShutdownProcess(p,()=>{
+                    var current=TakeSnapshot();
+                    return current.apps.Length==1&&current.apps[0].pid==pid&&current.apps[0].key==key;
+                },()=>Stopped());
+            }
+        }
         // Kept separate so OS shutdown/refusal can be tested with a hidden disposable app.
         static object ShutdownProcess(Process p,Func<bool> guard,Func<bool> canceledByUser) {
             uint handle; var sessionKey=new StringBuilder(33);

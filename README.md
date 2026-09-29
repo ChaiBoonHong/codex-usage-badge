@@ -43,13 +43,15 @@ The badge deliberately avoids a second navigation system. Usage is a compact car
 
 ## Install on Windows
 
-1. Download [**CodexUsageBadge-Windows-0.11.4.zip**](https://github.com/ChaiBoonHong/codex-usage-badge/releases/download/v0.11.4-windows/CodexUsageBadge-Windows-0.11.4.zip).
+1. Download [**CodexUsageBadge-Windows-0.11.5.zip**](https://github.com/ChaiBoonHong/codex-usage-badge/releases/download/v0.11.5-windows/CodexUsageBadge-Windows-0.11.5.zip).
 2. Extract the ZIP completely.
 3. Open and sign in to the Codex desktop app once.
 4. Run `START-HERE.cmd` from the extracted folder.
 5. Fully quit Codex, including its tray process, then reopen it from the normal Codex icon.
 
 The Windows helper waits for a new, untouched foreground launch. It may briefly close and reopen Codex once to add its local connection. It does not take over windows that are already in use.
+
+If automatic startup does not attach, open `Launch.cmd` while exactly one Codex window is open. It requests a normal exit for that one verified window, reopens it through Windows app activation, and then starts the badge.
 
 Need help? Open [Windows instructions](docs/windows.md) or run `Status.cmd` from the extracted folder.
 
@@ -96,7 +98,7 @@ tests/     Unit, layout, lifecycle, and release-safety checks
 
 ## Status
 
-- **Windows v0.11.4** — Slim-package installer fix, single-window installation, Store-safe launch behavior, and compact sidebar layout.
+- **Windows v0.11.5** — Guarded manual recovery for Microsoft Store Codex when automatic startup does not attach.
 - **macOS v0.9.2** — Existing release remains available; it is not changed by this Windows release.
 
-This is an independent MIT-licensed project and is not affiliated with OpenAI.
+This is an independent MIT-licensed project maintained by [CHAI BOON HONG](https://github.com/ChaiBoonHong) and is not affiliated with OpenAI.

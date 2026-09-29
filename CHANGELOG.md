@@ -1,5 +1,10 @@
 # Changelog
 
+## Windows 0.11.5
+
+- Made `Launch.cmd` a guarded, explicit recovery path for Microsoft Store Codex when automatic startup cannot attach.
+- Kept automatic startup unchanged: it still refuses to take over used, background, or multiple windows.
+
 ## Windows 0.11.4
 
 - Fixed installation from the slim package by removing the obsolete `README-Windows.md` copy step.

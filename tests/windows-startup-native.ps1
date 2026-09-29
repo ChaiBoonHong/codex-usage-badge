@@ -73,6 +73,10 @@ public class StartupFixture : Form {
     Assert ($null -eq $identityMethod.Invoke($null,@($child))) 'Unpackaged fixture must use the desktop launch path'
     $reply=[CodexUsageBadge.Startup.Native]::Quit($child.Id,$snapshot.apps[0].key,$snapshot.inputStamp)
     Assert (!$reply.accepted -and !$child.HasExited) 'Background/hidden app guard'
+    $reply=[CodexUsageBadge.Startup.Native]::QuitManual($child.Id,$snapshot.apps[0].key)
+    Assert ($reply.accepted -and $child.WaitForExit(5000)) ('Explicit guarded shutdown failed: '+$reply.reason)
+    $child.Dispose();$child=$null
+    Start-Fixture
     $method=[CodexUsageBadge.Startup.Native].GetMethod('ShutdownProcess',[Reflection.BindingFlags]'NonPublic,Static')
     $reply=$method.Invoke($null,@($child,[Func[bool]]{ $true },[Func[bool]]{ $false }))
     Assert ($reply.accepted -and $child.WaitForExit(5000)) ('Non-forced shutdown failed: '+$reply.reason)
@@ -112,7 +116,7 @@ public class StartupFixture : Form {
     $shown=[CodexUsageBadge.Startup.Native]::Show($reply.pid,$reply.key,'invalid-input-stamp',$snapshot.frontmostPid)
     Assert (!$shown.shown) 'Changed input must prevent showing a replacement'
     Stop-Fixture
-    Write-Host 'PASS native process identity/arguments, background guards, normal OS shutdown, refusal, hidden relaunch, input cancellation and stop guard'
+    Write-Host 'PASS native process identity/arguments, background guards, explicit guarded shutdown, normal OS shutdown, refusal, hidden relaunch, input cancellation and stop guard'
 } finally {
     Stop-Fixture
     $resolved=[IO.Path]::GetFullPath($temp)

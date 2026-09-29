@@ -3,7 +3,7 @@ param(
     [string]$AppExe, [string]$NodeExe, [string]$CodexBin, [string]$CodexHome
 )
 $ErrorActionPreference = 'Stop'
-$script:Version = '0.10.0'
+$script:Version = '0.11.5'
 $script:Owner = 'local.codexusagebadge.windows'
 
 function ConvertTo-NativeArgument([AllowEmptyString()][string]$Value) {
@@ -376,7 +376,7 @@ function Install-Badge($Overrides) {
     Assert-OwnedDirectory $script:InstallRoot
     Assert-ShortcutAvailable $script:StartupLink 'Run'
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $Overrides
-    foreach ($name in @('agent.cjs','bridge.cjs','startup/controller.cjs','startup/windows.cjs')) {
+    foreach ($name in @('agent.cjs','bridge.cjs','startup/controller.cjs','startup/windows.cjs','startup/manual-launch.cjs')) {
         $file = Join-Path $PSScriptRoot $name
         if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "The package is incomplete. Fully extract the ZIP first: $name" }
         [void](Invoke-Hidden $config.NodeExe @('--check',$file))
@@ -394,7 +394,7 @@ function Install-Badge($Overrides) {
             Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stage $name)
         }
         [void][IO.Directory]::CreateDirectory((Join-Path $stage 'startup'))
-        foreach ($name in @('controller.cjs','windows.cjs','windows-bridge.ps1','windows-native.cs')) {
+        foreach ($name in @('controller.cjs','manual-launch.cjs','windows.cjs','windows-bridge.ps1','windows-native.cs')) {
             Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('startup/' + $name)) -Destination (Join-Path $stage ('startup/' + $name))
         }
         Write-Json (Join-Path $stage 'config.json') $config
@@ -434,22 +434,17 @@ function Launch-Badge {
     Assert-OwnedDirectory $script:InstallRoot
     if (!(Test-Path -LiteralPath $script:ConfigPath)) { throw 'Not installed. Run Install.cmd first.' }
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $null
-    Stop-Worker
-    Write-Json $script:ConfigPath $config
-    Start-Worker
     if (@(Get-DebugPages).Count -gt 0) { return }
-    $running = @(Get-Process -Name 'Codex','ChatGPT' -ErrorAction SilentlyContinue | Where-Object {
-        try { Test-DesktopExecutable $_.Path } catch { $false }
-    })
-    if ($running.Count -gt 0) { throw 'Codex is running without the badge connection. Fully quit it from the tray or app menu, then open it from its normal icon. Your session will not be force-closed.' }
-    if ($config.AppExe -match '(?i)\\WindowsApps\\') { throw 'Microsoft Store Codex cannot be started directly with badge parameters. Fully quit Codex, then open it from its normal icon; the background helper will use Windows app activation when needed.' }
-    # This explicit path is only for ordinary desktop installations. Store installs must use app activation.
-    Start-Process -FilePath $config.AppExe -ArgumentList '--remote-debugging-address=127.0.0.1 --remote-debugging-port=39222' | Out-Null
-    for ($i = 0; $i -lt 30; $i++) {
-        if (@(Get-DebugPages).Count -gt 0) { return }
-        Start-Sleep -Seconds 1
+    Stop-Worker
+    try {
+        if (Test-Path -LiteralPath $script:StopPath) { Remove-Item -LiteralPath $script:StopPath -Force }
+        & $config.NodeExe (Join-Path $script:InstallRoot 'startup\manual-launch.cjs')
+        if ($LASTEXITCODE -ne 0) { throw 'Codex could not be reopened with the Badge connection.' }
+        Start-Worker
+    } catch {
+        Start-Worker
+        throw
     }
-    throw 'Codex started, but the debug connection is not ready. Run Status.cmd; after first sign-in, try the normal Codex icon again.'
 }
 function Uninstall-Badge {
     Assert-OwnedDirectory $script:InstallRoot

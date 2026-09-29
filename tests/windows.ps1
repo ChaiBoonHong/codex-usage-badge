@@ -58,7 +58,7 @@ try {
     $custom = Resolve-Configuration $config ([pscustomobject]@{CodexHome=$explicitHome;NodeExe=$node})
     Assert ($custom.CodexHome -eq $explicitHome -and $custom.Overrides.NodeExe -eq $node) 'custom paths persisted'
     Throws { Resolve-Configuration $config ([pscustomobject]@{NodeExe=(Join-Path $temp 'missing.exe')}) } 'Node.js'
-    Throws { Resolve-Configuration $config ([pscustomobject]@{CodexHome='relative-folder'}) } '绝对路径'
+    Throws { Resolve-Configuration $config ([pscustomobject]@{CodexHome='relative-folder'}) } 'absolute path'
     Write-Host 'PASS desktop vs CLI detection, Store manifest, managed runtimes, stale paths, explicit overrides'
 
     $script:InstallRoot = Join-Path $temp 'installed'
@@ -86,7 +86,7 @@ try {
     }
     [void][IO.Directory]::CreateDirectory($script:InstallRoot)
     Write-Utf8 (Join-Path $script:InstallRoot 'unrelated.txt') 'keep'
-    Throws { Install-Badge $null } '不属于本插件'
+    Throws { Install-Badge $null } 'not owned by Codex Usage Badge'
     Assert ((Get-Content -LiteralPath (Join-Path $script:InstallRoot 'unrelated.txt')) -eq 'keep') 'unowned directory preserved'
     Remove-Item -LiteralPath $script:InstallRoot -Recurse
     Write-Utf8 $script:DesktopLink 'unrelated link'
