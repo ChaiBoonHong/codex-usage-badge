@@ -227,6 +227,19 @@ namespace CodexUsageBadge.Startup {
                 },()=>Stopped());
             }
         }
+        public static object KillManual(int pid,string key) {
+            var snapshot=TakeSnapshot();
+            if(Stopped()||snapshot.apps.Length!=1) return new {accepted=false,reason="multiple-or-missing-app"};
+            var app=snapshot.apps[0];
+            if(app.pid!=pid||app.key!=key||app.debugPort!=null) return new {accepted=false,reason="identity"};
+            using(var p=Process.GetProcessById(pid)) {
+                if(!Matches(p)||Identity(p)!=key) return new {accepted=false,reason="identity"};
+                applicationId=ReadApplicationId(p);
+                // ponytail: 用户在菜单明确确认后才终止精确验证的主进程；自动启动路径绝不强制关闭。
+                p.Kill();
+                return new {accepted=p.WaitForExit(5000),reason="forced"};
+            }
+        }
         // Kept separate so OS shutdown/refusal can be tested with a hidden disposable app.
         static object ShutdownProcess(Process p,Func<bool> guard,Func<bool> canceledByUser) {
             uint handle; var sessionKey=new StringBuilder(33);

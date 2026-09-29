@@ -3,7 +3,7 @@ param(
     [string]$AppExe, [string]$NodeExe, [string]$CodexBin, [string]$CodexHome
 )
 $ErrorActionPreference = 'Stop'
-$script:Version = '0.11.6'
+$script:Version = '0.11.7'
 $script:Owner = 'local.codexusagebadge.windows'
 
 function ConvertTo-NativeArgument([AllowEmptyString()][string]$Value) {
@@ -437,7 +437,7 @@ function Launch-Badge {
     Stop-Worker
     try {
         if (Test-Path -LiteralPath $script:StopPath) { Remove-Item -LiteralPath $script:StopPath -Force }
-        & $config.NodeExe (Join-Path $script:InstallRoot 'startup\manual-launch.cjs')
+        & $config.NodeExe (Join-Path $script:InstallRoot 'startup\manual-launch.cjs') --force
         if ($LASTEXITCODE -ne 0) { throw 'Codex could not be reopened with the Badge connection.' }
         Start-Worker
     } catch {

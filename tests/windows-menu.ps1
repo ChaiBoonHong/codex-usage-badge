@@ -18,5 +18,6 @@ $save = $source.IndexOf('Save your Codex work before restarting.')
 $launch = $source.IndexOf('call :RunAction Launch')
 Assert ($install -ge 0 -and $save -gt $install -and $launch -gt $save) 'install asks to save before restart'
 Assert ($source -match 'Invalid option\. Choose a number from 1 to 5\.') 'invalid menu input is handled'
+Assert ((Get-Content -LiteralPath (Join-Path $root 'windows\manage-windows.ps1') -Raw) -match "manual-launch\.cjs'\) --force") 'menu restart requests force mode after confirmation'
 Assert ((Get-ChildItem -LiteralPath $package -Filter '*.cmd' -File).Name -ceq 'Codex Usage Badge.cmd') 'release contains only the menu command file'
 Write-Host 'PASS one-file menu selections, routes, save-before-restart order, invalid input and release contents'

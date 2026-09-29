@@ -1,5 +1,9 @@
 # Changelog
 
+## Windows 0.11.7
+
+- Made the menu's confirmed restart close the one verified Codex process before relaunching it with the Badge connection.
+
 ## Windows 0.11.6
 
 - Replaced the separate Windows command files with one `Codex Usage Badge.cmd` menu.

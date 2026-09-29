@@ -13,6 +13,7 @@ while ($null -ne ($line=[Console]::ReadLine())) {
             'snapshot' { [CodexUsageBadge.Startup.Native]::TakeSnapshot() }
             'quit' { [CodexUsageBadge.Startup.Native]::Quit($request.pid,$request.key,$request.stamp) }
             'quitManual' { [CodexUsageBadge.Startup.Native]::QuitManual($request.pid,$request.key) }
+            'killManual' { [CodexUsageBadge.Startup.Native]::KillManual($request.pid,$request.key) }
             'launch' { [CodexUsageBadge.Startup.Native]::Launch($request.stamp,$request.foreground) }
             'show' { [CodexUsageBadge.Startup.Native]::Show($request.pid,$request.key,$request.stamp,$request.foreground) }
             default { throw 'Unknown startup action' }

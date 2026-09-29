@@ -12,9 +12,9 @@ The installer uses the current user account only. It installs to `%LOCALAPPDATA%
 
 ## What happens during restart
 
-The menu requests a normal exit and reopens Codex with the Badge’s local connection. The window may briefly disappear and return.
+After the user saves work and types `C`, the menu closes one verified Codex process and reopens Codex with the Badge’s local connection. The window may briefly disappear and return.
 
-It refuses the attempt when multiple Codex windows are open, the local port is already in use, or Codex declines the normal exit request. It never force-closes Codex.
+It refuses the attempt when multiple Codex windows are open or the local port is already in use. The confirmed menu action closes only the one verified Codex process; automatic background startup never force-closes Codex.
 
 For Microsoft Store installs, the helper uses Windows app activation rather than directly executing a protected `WindowsApps` executable.
 
@@ -23,7 +23,7 @@ For Microsoft Store installs, the helper uses Windows app activation rather than
 | Menu option | Purpose |
 | --- | --- |
 | **Install or update** | Install or update the Badge, then prompt before restart. |
-| **Restart Codex with Badge** | Guardedly restart one open Codex window with the Badge connection, including Microsoft Store installs. |
+| **Restart Codex with Badge** | Close and relaunch one verified Codex window with the Badge connection, including Microsoft Store installs. |
 | **Check status** | Show the worker, startup monitor, and current connection state. |
 | **Uninstall** | Remove the Badge, its Startup shortcut, and its local UI settings. |
 | **Exit** | Close the menu without changing anything. |
