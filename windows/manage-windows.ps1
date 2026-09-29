@@ -3,7 +3,7 @@ param(
     [string]$AppExe, [string]$NodeExe, [string]$CodexBin, [string]$CodexHome
 )
 $ErrorActionPreference = 'Stop'
-$script:Version = '0.11.11'
+$script:Version = '0.11.12'
 $script:Owner = 'local.codexusagebadge.windows'
 
 function ConvertTo-NativeArgument([AllowEmptyString()][string]$Value) {
@@ -35,11 +35,11 @@ function Write-Json([string]$Path, $Value) {
 function Read-Json([string]$Path) {
     if (Test-Path -LiteralPath $Path -PathType Leaf) { Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json }
 }
-function Write-Event([string]$Action, [string]$Detail = '') {
+function Write-Event([string]$Action, [string]$Step, $Data = @{}) {
     $logRoot = Join-Path $script:InstallRoot 'logs'
     [void][IO.Directory]::CreateDirectory($logRoot)
-    $line = ([DateTime]::UtcNow.ToString('o') + "`t" + $Action + "`t" + $Detail + [Environment]::NewLine)
-    [IO.File]::AppendAllText((Join-Path $logRoot 'events.log'), $line, (New-Object Text.UTF8Encoding($false)))
+    $entry = [ordered]@{ timestamp = [DateTime]::UtcNow.ToString('o'); version = $script:Version; action = $Action; step = $Step; data = $Data }
+    [IO.File]::AppendAllText((Join-Path $logRoot 'events.jsonl'), (($entry | ConvertTo-Json -Compress -Depth 4) + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false)))
 }
 function Assert-OwnedDirectory([string]$Path) {
     if (!(Test-Path -LiteralPath $Path)) { return }
@@ -281,18 +281,20 @@ function Test-Worker {
     finally { if ($mutex) { $mutex.Dispose() } }
 }
 function Stop-Worker {
-    if (!(Test-Worker)) { Write-Event 'worker-stop' 'not-running'; return }
+    if (!(Test-Path -LiteralPath $script:InstallRoot)) { return }
     Assert-OwnedDirectory $script:InstallRoot
-    Write-Event 'worker-stop' 'requested'
+    if (!(Test-Worker)) { Write-Event 'worker-stop' 'skipped' @{ reason = 'not-running' }; return }
+    Write-Event 'worker-stop' 'requested' @{ timeoutSeconds = 30 }
     Write-Utf8 $script:StopPath 'stop'
     $deadline = [DateTime]::UtcNow.AddSeconds(30)
     while ((Test-Worker) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
-    if (Test-Worker) { Write-Event 'worker-stop' 'timeout'; throw 'The background worker did not stop; the installation directory is unchanged. Sign out of Windows and retry, or choose Check status from Codex Usage Badge.cmd first.' }
-    Write-Event 'worker-stop' 'completed'
+    if (Test-Worker) { Write-Event 'worker-stop' 'failed' @{ reason = 'timeout' }; throw 'The background worker did not stop; the installation directory is unchanged. Sign out of Windows and retry, or choose Check status from Codex Usage Badge.cmd first.' }
+    Write-Event 'worker-stop' 'completed' @{}
 }
 function Start-Worker {
-    if (Test-Worker) { Write-Event 'worker-start' 'already-running'; return }
-    Write-Event 'worker-start' 'requested'
+    Assert-OwnedDirectory $script:InstallRoot
+    if (Test-Worker) { Write-Event 'worker-start' 'skipped' @{ reason = 'already-running' }; return }
+    Write-Event 'worker-start' 'requested' @{ timeoutSeconds = 25 }
     if (Test-Path -LiteralPath $script:StopPath) { Remove-Item -LiteralPath $script:StopPath -Force }
     if (Test-Path -LiteralPath $script:StatePath) { Remove-Item -LiteralPath $script:StatePath -Force }
     Start-Process -FilePath $script:PowerShell -ArgumentList (Get-ManagerArguments 'Run') -WindowStyle Hidden | Out-Null
@@ -300,10 +302,10 @@ function Start-Worker {
     while ([DateTime]::UtcNow -lt $deadline) {
         Start-Sleep -Milliseconds 200
         $state = Read-Json $script:StatePath
-        if ((Test-Worker) -and (Get-Setting $state 'State') -eq 'running') { Write-Event 'worker-start' 'completed'; return }
-        if ((Get-Setting $state 'State') -eq 'error') { Write-Event 'worker-start' 'error'; throw $state.Message }
+        if ((Test-Worker) -and (Get-Setting $state 'State') -eq 'running') { Write-Event 'worker-start' 'completed' @{ state = 'running' }; return }
+        if ((Get-Setting $state 'State') -eq 'error') { Write-Event 'worker-start' 'failed' @{ reason = 'worker-error' }; throw $state.Message }
     }
-    Write-Event 'worker-start' 'timeout'
+    Write-Event 'worker-start' 'failed' @{ reason = 'timeout' }
     throw 'Background startup timed out. Choose Check status from Codex Usage Badge.cmd for details.'
 }
 function Run-Worker {
@@ -385,7 +387,7 @@ function Restore-ShortcutState($Entries) {
 function Install-Badge($Overrides) {
     Assert-OwnedDirectory $script:InstallRoot
     Assert-ShortcutAvailable $script:StartupLink 'Run'
-    if (Test-Path -LiteralPath $script:InstallRoot) { Write-Event 'install' 'requested' }
+    if (Test-Path -LiteralPath $script:InstallRoot) { Write-Event 'install' 'requested' @{ update = $true } }
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $Overrides
     foreach ($name in @('agent.cjs','bridge.cjs','startup/controller.cjs','startup/windows.cjs','startup/manual-launch.cjs')) {
         $file = Join-Path $PSScriptRoot $name
@@ -400,6 +402,7 @@ function Install-Badge($Overrides) {
     $oldMoved = $false
     try {
         [void][IO.Directory]::CreateDirectory($stage)
+        if (Test-Path -LiteralPath $script:InstallRoot) { Write-Event 'install' 'staging-created' @{ update = $true } }
         Write-Utf8 (Join-Path $stage '.codex-usage-badge-owner') $script:Owner
         foreach ($name in @('Codex Usage Badge.cmd','manage-windows.ps1','agent.cjs','bridge.cjs')) {
             Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stage $name)
@@ -414,6 +417,7 @@ function Install-Badge($Overrides) {
         if (Test-Path -LiteralPath $oldReceipt) { Copy-Item -LiteralPath $oldReceipt -Destination (Join-Path $stage 'startup/state.json') }
         if (Test-Path -LiteralPath $script:InstallRoot) { Move-Item -LiteralPath $script:InstallRoot -Destination $backup; $oldMoved = $true }
         Move-Item -LiteralPath $stage -Destination $script:InstallRoot; $swapped = $true
+        Write-Event 'install' 'files-replaced' @{ upgraded = $oldMoved }
         if (Test-OwnedShortcut $script:DesktopLink 'Launch') { Remove-Item -LiteralPath $script:DesktopLink -Force }
         Write-Shortcut $script:StartupLink 'Run' $config.AppExe
         Start-Worker
@@ -432,7 +436,7 @@ function Install-Badge($Overrides) {
         if (Test-Path -LiteralPath $stage) { Assert-OwnedDirectory $stage; Remove-Item -LiteralPath $stage -Recurse -Force }
     }
     Write-Host 'Installation succeeded. Return to Codex Usage Badge.cmd, save your work, then choose Restart Codex with Badge.'
-    Write-Event 'install' 'completed'
+    Write-Event 'install' 'completed' @{ upgraded = $oldMoved }
     if ($oldMoved) { Write-Host "Previous version backup: $backup" }
 }
 function Get-DebugPages {
@@ -445,16 +449,16 @@ function Launch-Badge {
     Assert-OwnedDirectory $script:InstallRoot
     if (!(Test-Path -LiteralPath $script:ConfigPath)) { throw 'Not installed. Choose Install or update from Codex Usage Badge.cmd first.' }
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $null
-    Write-Event 'restart' 'requested'
+    Write-Event 'restart' 'requested' @{ mode = 'confirmed-force'; port = $config.Port }
     Stop-Worker
     try {
         if (Test-Path -LiteralPath $script:StopPath) { Remove-Item -LiteralPath $script:StopPath -Force }
         & $config.NodeExe (Join-Path $script:InstallRoot 'startup\manual-launch.cjs') --force
         if ($LASTEXITCODE -ne 0) { throw 'Codex could not be reopened with the Badge connection.' }
-        Write-Event 'restart' 'reopened'
+        Write-Event 'restart' 'reopened' @{ mode = 'confirmed-force' }
         Start-Worker
     } catch {
-        Write-Event 'restart' 'failed'
+        Write-Event 'restart' 'failed' @{ reason = $_.Exception.GetType().Name }
         Start-Worker
         throw
     }
@@ -463,7 +467,7 @@ function Uninstall-Badge {
     Assert-OwnedDirectory $script:InstallRoot
     if (!(Test-Path -LiteralPath $script:InstallRoot)) { Write-Host 'Codex Usage Badge is not installed.'; return }
     Assert-ShortcutAvailable $script:StartupLink 'Run'
-    Write-Event 'uninstall' 'requested'
+    Write-Event 'uninstall' 'requested' @{}
     Stop-Worker
     $config = Read-Json $script:ConfigPath
     $cleaned = $false
@@ -471,7 +475,8 @@ function Uninstall-Badge {
         $result = Invoke-Hidden $config.NodeExe @((Join-Path $script:InstallRoot 'bridge.cjs'),'cleanup')
         Write-Host $result
         $cleaned = $true
-    } catch { Write-Host 'The current window cannot be reached. UI components disappear after the next full restart; saved project colors may remain and can be reset by reinstalling.' }
+        Write-Event 'uninstall' 'ui-cleanup-completed' @{}
+    } catch { Write-Event 'uninstall' 'ui-cleanup-skipped' @{ reason = $_.Exception.GetType().Name }; Write-Host 'The current window cannot be reached. UI components disappear after the next full restart; saved project colors may remain and can be reset by reinstalling.' }
     $links = @(Save-ShortcutState)
     $backup = $script:InstallRoot + '.uninstalled-' + [guid]::NewGuid().ToString('N')
     try {
@@ -482,10 +487,11 @@ function Uninstall-Badge {
     Write-Host "Uninstalled. Your Codex app, sign-in, and chats remain intact. Recoverable backup: $backup"
 }
 function Show-Status {
-    if (Test-Path -LiteralPath $script:InstallRoot) { Write-Event 'status' 'requested' }
+    if (Test-Path -LiteralPath $script:InstallRoot) { Assert-OwnedDirectory $script:InstallRoot; Write-Event 'status' 'requested' @{ workerRunning = [bool](Test-Worker) } }
     Write-Host "Codex Usage Badge Windows $script:Version"
     Write-Host "Install directory: $script:InstallRoot"
     Write-Host "Background running: $(Test-Worker)"
+    Write-Host "Detailed lifecycle log: $(Join-Path $script:InstallRoot 'logs\events.jsonl')"
     $state = Read-Json $script:StatePath
     if ($state) { Write-Host ($state | ConvertTo-Json -Compress) }
     $receipt = Read-Json (Join-Path $script:InstallRoot 'startup/state.json')

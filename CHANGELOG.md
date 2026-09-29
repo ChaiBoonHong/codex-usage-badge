@@ -1,5 +1,9 @@
 # Changelog
 
+## Windows 0.11.12
+
+- Changed lifecycle logs to detailed JSON Lines records with timestamps, version, action, step, and safe result context.
+
 ## Windows 0.11.11
 
 - Added local step logs for menu choices, install/update, restart, status, worker lifecycle, and uninstall.

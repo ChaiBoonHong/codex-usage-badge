@@ -71,7 +71,7 @@ The restart is guarded. After you save work and type `C`, it closes only one ver
 ## Local logs
 
 - `Codex Usage Badge.log` is created beside the menu file and records menu choices, confirmations, and action outcomes.
-- `%LOCALAPPDATA%\CodexUsageBadge\logs\events.log` records installer, restart, status, and worker lifecycle steps.
+- `%LOCALAPPDATA%\CodexUsageBadge\logs\events.jsonl` records timestamped installer, restart, status, and worker lifecycle steps, including safe result context.
 - Logs contain step names and outcomes only; they do not contain chats, credentials, or account data.
 
 Read the detailed [Windows instructions](docs/windows.md) for requirements and technical diagnostics.

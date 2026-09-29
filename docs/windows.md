@@ -57,6 +57,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\manage-windows.ps1 -Ac
 
 ## Logs
 
-`Codex Usage Badge.log` is beside the menu file. Lifecycle events are in `%LOCALAPPDATA%\CodexUsageBadge\logs\events.log`. Both files record action steps and outcomes without chat content, credentials, or account data.
+`Codex Usage Badge.log` is beside the menu file. Detailed lifecycle events are JSON Lines records in `%LOCALAPPDATA%\CodexUsageBadge\logs\events.jsonl`; each includes UTC time, version, action, step, and safe result context. Neither file contains chat content, credentials, or account data.
 
 Uninstall keeps your Codex app, account, and chats intact. The installer retains named backup folders such as `CodexUsageBadge.backup-*` and `CodexUsageBadge.uninstalled-*`; remove them yourself when they are no longer needed.

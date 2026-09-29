@@ -30,6 +30,8 @@ try {
     Write-Shortcut $script:DesktopLink 'Launch' $gui
     Install-Badge ([pscustomobject]@{AppExe=$gui;NodeExe=$runtime;CodexBin=$cli;CodexHome=$env:CODEX_HOME})
     Assert (Test-Worker) 'Native hidden supervisor did not start'
+    $events = Get-Content -LiteralPath (Join-Path $script:InstallRoot 'logs\events.jsonl') | ForEach-Object { $_ | ConvertFrom-Json }
+    Assert (@($events | Where-Object { $_.action -eq 'worker-start' -and $_.step -eq 'completed' }).Count -eq 1) 'Detailed worker-start event missing'
     Assert (!(Test-Path -LiteralPath $script:DesktopLink)) 'Legacy desktop shortcut not removed'
     Assert (Test-OwnedShortcut $script:StartupLink 'Run') 'Startup shortcut target mismatch'
     $state = Read-Json $script:StatePath
