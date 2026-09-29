@@ -40,9 +40,9 @@ for target_platform in platforms:
         for filename in ['controller.cjs','windows.cjs','windows-bridge.ps1','windows-native.cs']:
             mapping['startup/'+filename] = 'startup/'+filename
         for action in ['Install','Launch','Status','Uninstall']:
-            text = f'@echo off\nsetlocal\n"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0manage-windows.ps1" -Action {action}\nset "BADGE_EXIT=%ERRORLEVEL%"\nif not "%BADGE_EXIT%"=="0" echo Operation failed. See the message above.\npause\nexit /b %BADGE_EXIT%\n'
+            text = f'@echo off\nsetlocal\n"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0manage-windows.ps1" -Action {action}\nset "BADGE_EXIT=%ERRORLEVEL%"\nif not "%BADGE_EXIT%"=="0" echo Operation failed. See the message above.\necho.\necho Press any key to exit.\npause >nul\nexit /b %BADGE_EXIT%\n'
             generated[action+'.cmd'] = text.replace('\n','\r\n').encode('ascii')
-        generated['START-HERE.cmd'] = b'@echo off\r\nstart "" /wait "%~dp0Install.cmd"\r\n'
+        generated['START-HERE.cmd'] = b'@echo off\r\ncall "%~dp0Install.cmd"\r\nexit /b %ERRORLEVEL%\r\n'
     payload = {file:(root / source).read_bytes() for file,source in mapping.items()}
     payload.update(generated)
     if target_platform == 'Windows':

@@ -1,5 +1,10 @@
 # Changelog
 
+## Windows 0.11.3 (pre-release)
+
+- Kept `START-HERE.cmd` and `Install.cmd` in one terminal window.
+- Replaced the generic pause prompt with “Press any key to exit.”
+
 ## Windows 0.11.2 (pre-release)
 
 - Prevented `Launch.cmd` from directly starting Microsoft Store Codex, which loses package identity.
