@@ -1,5 +1,10 @@
 # Changelog
 
+## Windows 0.11.2 (pre-release)
+
+- Prevented `Launch.cmd` from directly starting Microsoft Store Codex, which loses package identity.
+- Clarified that Store installations must reopen Codex from its normal icon so the background helper can use Windows app activation.
+
 ## Windows 0.11.1 (pre-release)
 
 - Added `START-HERE.cmd` as the recommended one-click Windows installer entry point.

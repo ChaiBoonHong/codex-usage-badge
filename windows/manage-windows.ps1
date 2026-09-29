@@ -441,14 +441,15 @@ function Launch-Badge {
     $running = @(Get-Process -Name 'Codex','ChatGPT' -ErrorAction SilentlyContinue | Where-Object {
         try { Test-DesktopExecutable $_.Path } catch { $false }
     })
-    if ($running.Count -gt 0) { throw 'Codex is running without the badge connection. Fully quit it from the tray or app menu, then run Launch.cmd. Your session will not be force-closed.' }
-    # Only this explicit user action starts the GUI. The Run action cannot call this function.
+    if ($running.Count -gt 0) { throw 'Codex is running without the badge connection. Fully quit it from the tray or app menu, then open it from its normal icon. Your session will not be force-closed.' }
+    if ($config.AppExe -match '(?i)\\WindowsApps\\') { throw 'Microsoft Store Codex cannot be started directly with badge parameters. Fully quit Codex, then open it from its normal icon; the background helper will use Windows app activation when needed.' }
+    # This explicit path is only for ordinary desktop installations. Store installs must use app activation.
     Start-Process -FilePath $config.AppExe -ArgumentList '--remote-debugging-address=127.0.0.1 --remote-debugging-port=39222' | Out-Null
     for ($i = 0; $i -lt 30; $i++) {
         if (@(Get-DebugPages).Count -gt 0) { return }
         Start-Sleep -Seconds 1
     }
-    throw 'Codex started, but the debug connection is not ready. Run Status.cmd; after first sign-in, try Launch.cmd again.'
+    throw 'Codex started, but the debug connection is not ready. Run Status.cmd; after first sign-in, try the normal Codex icon again.'
 }
 function Uninstall-Badge {
     Assert-OwnedDirectory $script:InstallRoot
