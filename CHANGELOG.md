@@ -1,5 +1,9 @@
 # Changelog
 
+## Windows 0.11.8
+
+- Fixed confirmed menu restart being skipped when the Badge was already connected to Codex.
+
 ## Windows 0.11.7
 
 - Made the menu's confirmed restart close the one verified Codex process before relaunching it with the Badge connection.

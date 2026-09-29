@@ -23,6 +23,8 @@ Assert ((Join-NativeArguments @('-File','C:\中文 目录\manage-windows.ps1','-
 $run = $ast.Find({param($a) $a -is [Management.Automation.Language.FunctionDefinitionAst] -and $a.Name -eq 'Run-Worker'}, $true).Extent.Text
 Assert ($run -notmatch 'Launch-Badge|\$config.AppExe\s+-ArgumentList|\.focus\(|AppActivate') 'worker never launches GUI'
 Assert ($run -match 'WindowStyle Hidden' -and $run -match 'CODEX_BADGE_STOP_FILE') 'hidden child and graceful stop'
+ $launch = $ast.Find({param($a) $a -is [Management.Automation.Language.FunctionDefinitionAst] -and $a.Name -eq 'Launch-Badge'}, $true).Extent.Text
+Assert ($launch -notmatch 'Get-DebugPages') 'explicit restart never skips an already connected window'
 Write-Host 'PASS PowerShell parsing, argument quoting, no background activation'
 
 $temp = Join-Path ([IO.Path]::GetTempPath()) ('badge-windows-中文 空格-' + [guid]::NewGuid().ToString('N'))

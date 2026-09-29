@@ -3,7 +3,7 @@ param(
     [string]$AppExe, [string]$NodeExe, [string]$CodexBin, [string]$CodexHome
 )
 $ErrorActionPreference = 'Stop'
-$script:Version = '0.11.7'
+$script:Version = '0.11.8'
 $script:Owner = 'local.codexusagebadge.windows'
 
 function ConvertTo-NativeArgument([AllowEmptyString()][string]$Value) {
@@ -433,7 +433,6 @@ function Launch-Badge {
     Assert-OwnedDirectory $script:InstallRoot
     if (!(Test-Path -LiteralPath $script:ConfigPath)) { throw 'Not installed. Choose Install or update from Codex Usage Badge.cmd first.' }
     $config = Resolve-Configuration (Read-Json $script:ConfigPath) $null
-    if (@(Get-DebugPages).Count -gt 0) { return }
     Stop-Worker
     try {
         if (Test-Path -LiteralPath $script:StopPath) { Remove-Item -LiteralPath $script:StopPath -Force }
