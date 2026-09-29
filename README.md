@@ -12,11 +12,11 @@
 
 ## 下载
 
-[**Windows v0.10.0 预发布版**](https://github.com/jaykinhoo9/codex-usage-badge/releases/tag/v0.10.0-windows) · [macOS v0.9.1](https://github.com/jaykinhoo9/codex-usage-badge/releases/tag/v0.9.1)
+[**macOS v0.9.2 预发布版**](https://github.com/jaykinhoo9/codex-usage-badge/releases/tag/v0.9.2-macos) · [Windows v0.10.0](https://github.com/jaykinhoo9/codex-usage-badge/releases/tag/v0.10.0-windows)
 
 | 系统 | 安装包 | 使用说明 |
 | --- | --- | --- |
-| macOS · Apple Silicon / Intel | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.9.1/CodexUsageBadge-macOS-0.9.1.zip) | [macOS 安装](docs/macos.md) |
+| macOS · Apple Silicon / Intel | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.9.2-macos/CodexUsageBadge-macOS-0.9.2.zip) | [macOS 安装](docs/macos.md) |
 | Windows 10 / 11 | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.10.0-windows/CodexUsageBadge-Windows-0.10.0.zip) | [Windows 安装](docs/windows.md) |
 
 macOS 和 Windows 安装后均可沿用原应用图标，启动时自动加载。Windows 后台在新窗口尚未开始操作时请求正常重开；点击、输入或后台启动时会跳过。需要已登录的 Codex 客户端和 Node.js 24+，安装器会优先查找客户端自带的运行环境。

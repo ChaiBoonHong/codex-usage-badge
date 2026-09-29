@@ -1,5 +1,5 @@
 function installThreadTokens() {
-  const VERSION = 6;
+  const VERSION = 7;
   const KEY = '__codexThreadTokens';
   const ROW = '[data-app-action-sidebar-thread-row][data-app-action-sidebar-thread-id]';
   const MARK = 'data-codex-thread-tokens';
@@ -15,12 +15,22 @@ function installThreadTokens() {
   const badges = new Map();
   const style = document.createElement('style');
   style.id = 'codex-thread-tokens-style';
+  // GPT can nest a block title inside a non-flex slot. Style only the direct
+  // badge/title container, leaving outer metadata and secondary rows intact.
   style.textContent = `
     [${MARK}] { --token-0: #d6dce2; --token-1: #c4d5ec; --token-2: #90b2e1; --token-3: #5e90d0; --token-4: #2f6ebf;
       position: relative; display: inline-block; align-self: center; flex: 0 0 12px; width: 12px; height: 12px;
       box-sizing: border-box; border-radius: 3px; border: 0; background: var(--token-0);
       cursor: inherit; user-select: none; -webkit-app-region: no-drag; }
     [${MARK}]::before { content: ''; position: absolute; inset: -6px; }
+    :is(${ROW}, ${ROW} *):has(> [${MARK}] + [data-thread-title]) {
+      display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important;
+      align-items: center; gap: 6px; min-width: 0;
+    }
+    ${ROW} [${MARK}] + [data-thread-title] {
+      flex: 1 1 auto !important; width: auto !important; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     html.dark [${MARK}], html[data-theme="dark"] [${MARK}] {
       --token-0: #282828; --token-1: #1d293e; --token-2: #223b60; --token-3: #27528c; --token-4: #2d70ca; }
     @media (prefers-color-scheme: dark) {

@@ -148,7 +148,7 @@ async function install() {
   }
   try {await cleanupLegacyLauncher({home,app,installDir,bridge:path.join(startupDir,'bridge'),command,ownedLauncher,ownedShortcut});}
   catch(error){console.warn('自动加载已安装；旧快捷方式需手动移除：'+error.message);}
-  console.log('已安装 v0.9.1。完全退出客户端后，从原来的 Codex 图标打开，等待 5–10 秒。');
+  console.log('已安装 v0.9.2。完全退出客户端后，从原来的 Codex 图标打开，等待 5–10 秒。');
 }
 async function targets() {
   const response=await fetch('http://127.0.0.1:39222/json/list',{signal:AbortSignal.timeout(2000)});
@@ -178,7 +178,7 @@ function appRunning() {
   return command('/bin/ps',['-Ao','comm=']).split('\n').some(s=>s.trim()===path.join(app,'Contents/MacOS',executable));
 }
 function record(value) {
-  fs.writeFileSync(path.join(installDir,'状态.json'),JSON.stringify({time:new Date().toISOString(),version:'0.9.1',...value},null,2)+'\n');
+  fs.writeFileSync(path.join(installDir,'状态.json'),JSON.stringify({time:new Date().toISOString(),version:'0.9.2',...value},null,2)+'\n');
 }
 async function waitForExit({isRunning=appRunning,sleep=pause,now=Date.now,timeoutMs=300000}={}) {
   const deadline=now()+timeoutMs;
@@ -221,7 +221,7 @@ async function activate({allowRestart=false,foreground=false}={}) {
     try {
       const pages=await targets();
       const results=await Promise.all(pages.map(async t=>({target:t,status:await evaluate(t,'window.__codexUsageBadge?.status() ?? null'),colors:await evaluate(t,'window.__codexProjectColors?.status() ?? null'),tokens:await evaluate(t,'window.__codexThreadTokens?.status() ?? null')})));
-      const shown=results.filter(r=>r.status?.placed&&r.status.badgeCount===1&&r.status.version===46&&!r.status.stale&&Number.isFinite(r.status.updatedAt)&&Date.now()-r.status.updatedAt<150000&&r.colors?.version===2&&r.tokens?.version===6);
+      const shown=results.filter(r=>r.status?.placed&&r.status.badgeCount===1&&r.status.version===46&&!r.status.stale&&Number.isFinite(r.status.updatedAt)&&Date.now()-r.status.updatedAt<150000&&r.colors?.version===2&&r.tokens?.version===7);
       if(shown.length&&/state = running/.test(loaded(label)||'')) {
         uiWasShown=true;
         const target=shown[0].target;
@@ -268,7 +268,7 @@ async function uninstall() {
   console.log('已卸载并清除界面，无需重启。文件已移入废纸篓。');
 }
 async function status() {
-  console.log('版本：0.9.1');
+  console.log('版本：0.9.2');
   console.log('自动加载：'+(/state = running/.test(loaded(startupLabel)||'')?'运行中':'未运行'));
   console.log('后台：'+(/state = running/.test(loaded(label)||'')?'运行中':'未运行'));
   let pages=[];try{pages=await targets();}catch{}
