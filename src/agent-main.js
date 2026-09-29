@@ -22,7 +22,7 @@ function log(...args) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   options.codexBin = resolveCodexBin(options.codexBin, options.appPath);
-  log(`codex-usage-badge v${AGENT_VERSION} 启动：仅连接本机端口 ${options.port}，不启动、不退出、不激活客户端。`);
+  log(`codex-usage-badge v${AGENT_VERSION} started: local port ${options.port} only; it never starts, exits, or activates Codex.`);
   const injector = new RendererInjector({ port: options.port, debug: options.debug, scanIntervalMs: 5000 });
   const tokenReader = new ThreadTokenReader();
   let stopped = false;
@@ -31,16 +31,16 @@ async function main() {
   let nextRead = 0;
   let failures = 0;
   let connected = false;
-  injector.currentValue = { percent: null, title: '正在读取 Codex 剩余用量', tone: 'muted', windowLabel: '' };
+  injector.currentValue = { percent: null, title: 'Loading Codex usage…', tone: 'muted', windowLabel: '' };
   // A missing port is an idle state, never a reason to restart or focus the app.
   const scan = async () => {
     if (stopped) return;
     try {
       await injector.scan();
-      if (!connected && injector.sessions.size > 0) log('主窗口连接正常，进度条已注入。');
+      if (!connected && injector.sessions.size > 0) log('Connected to the main window; usage UI injected.');
       connected = injector.sessions.size > 0;
     } catch {
-      if (connected) log('主窗口暂不可连接，静默等待。');
+      if (connected) log('Main window is unavailable; waiting quietly.');
       connected = false;
       // Drop sessions from a previous app instance without launching anything.
       for (const session of injector.sessions.values()) session.close();
@@ -87,21 +87,21 @@ async function main() {
       old?.stop();
       failures++;
       nextRead = Date.now() + Math.min(60000, 10000 * failures);
-      if (failures === 1 || failures % 10 === 0) log(`用量暂不可用：${error.message}`);
+      if (failures === 1 || failures % 10 === 0) log(`Usage data unavailable: ${error.message}`);
       await injector.update(unavailableValue(injector.currentValue));
     } finally { pending = false; }
   }
   const tick = async () => {
     await scan();
     // Quota requests can wait on the network; pending prevents overlap without delaying local reads.
-    readUsage().catch(error => { if (!stopped) log(`额度刷新暂不可用：${error.message}`); });
+    readUsage().catch(error => { if (!stopped) log(`Usage refresh unavailable: ${error.message}`); });
     await refreshThreadTokens(injector, tokenReader);
   };
   let ticking = false;
   const guardedTick = async () => {
     if (ticking || stopped) return;
     ticking = true;
-    try { await tick(); } catch (error) { log(`连接暂不可用：${error.message}`); }
+    try { await tick(); } catch (error) { log(`Connection unavailable: ${error.message}`); }
     finally { ticking = false; }
   };
   const timer = setInterval(guardedTick, 5000);
@@ -125,4 +125,4 @@ async function main() {
   await guardedTick();
 }
 module.exports = { installUsageBadge, installProjectColors, installThreadTokens, ThreadTokenReader, refreshThreadTokens, buildBootstrapScript, formatRateLimits, mergeRateLimitsResponse, isMainWindow, resolveCodexBin, AppServerClient, main };
-if (require.main === module) main().catch(error => { log(`agent 启动失败：${error.message}`); process.exitCode = 1; });
+if (require.main === module) main().catch(error => { log(`Agent startup failed: ${error.message}`); process.exitCode = 1; });

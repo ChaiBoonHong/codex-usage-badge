@@ -60,8 +60,8 @@ async function geometry(page) {
         const context=`${theme}/${width}/${actual.shape}`;
         assert.deepEqual(actual.row,before[i].row,context+': row geometry changed');
         assert.deepEqual(actual.meta,before[i].meta,context+': metadata or secondary line moved');
-        assert.equal(actual.badge.width,12,context);assert.equal(actual.badge.height,12,context);
-        assert.ok(Math.abs(actual.badge.y+6-actual.title.y-actual.title.height/2)<0.5,context+': badge and title must share a center line');
+        assert.equal(actual.badge.width,7,context);assert.equal(actual.badge.height,7,context);
+        assert.ok(Math.abs(actual.badge.y+3.5-actual.title.y-actual.title.height/2)<0.5,context+': badge and title must share a center line');
         assert.ok(actual.title.x-actual.badge.right>=6,context+': insufficient badge/title spacing');
         assert.ok(actual.title.right<=actual.row.right-8.0+0.5,context+': title exceeds the row');
         assert.ok(actual.badge.y>=actual.row.y&&actual.badge.bottom<=actual.row.bottom,context+': badge overlaps adjacent rows');
@@ -76,7 +76,7 @@ async function geometry(page) {
       assert.deepEqual(await page.evaluate(()=>[window.titleClicks,window.titleContextMenus]),[1,1]);
       await page.locator(`[${mark}]`).first().hover();
       await page.waitForSelector('#codex-thread-tokens-tooltip:visible');
-      assert.equal(await page.locator('#codex-thread-tokens-tooltip').textContent(),'累计使用 1.85千万 Token');
+      assert.equal(await page.locator('#codex-thread-tokens-tooltip').textContent(),'18.49M cumulative tokens');
       await page.mouse.move(375,415);
       if(width===330){
         const output=path.join(__dirname,'artifacts');fs.mkdirSync(output,{recursive:true});

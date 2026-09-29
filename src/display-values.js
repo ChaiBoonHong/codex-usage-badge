@@ -1,9 +1,9 @@
 function quotaTone(percent) {
   return !Number.isFinite(percent) ? 'muted' : percent < 10 ? 'danger' : percent <= 50 ? 'warning' : 'normal';
 }
-function unavailableValue(current, title = '暂时无法读取 Codex 用量，正在自动重试') {
+function unavailableValue(current, title = 'Codex usage is temporarily unavailable. Retrying…') {
   return { ...current, percent: null, title, tone: 'muted', stale: true,
-    rings: current?.rings?.map(ring => ({ ...ring, percent: null, tone: 'muted', title: `${ring.label}：暂不可用` })) ?? null };
+    rings: current?.rings?.map(ring => ({ ...ring, percent: null, tone: 'muted', title: `${ring.label}: unavailable` })) ?? null };
 }
 function formatRateLimits(response) {
   const single = formatPrimaryRateLimits(response);
@@ -18,12 +18,12 @@ function formatRateLimits(response) {
     const reset = formatResetTime(window?.resetsAt);
     const tone = quotaTone(percent);
     return { key, label, percent, tone,
-      title: `${label}：${percent === null ? '暂不可用' : `剩余 ${percent}%`}${reset ? `，${reset} 重置` : ''}` };
+      title: `${label}: ${percent === null ? 'unavailable' : `${percent}% remaining`}${reset ? ` · resets ${reset}` : ''}` };
   }
   const rings = [
-    ring('five-hour', '5h额度', w => w.windowDurationMins === 300),
-    ring('weekly', '周额度', w => Number.isFinite(w.windowDurationMins) && w.windowDurationMins >= 10080 && w.windowDurationMins % 10080 === 0)
+    ring('five-hour', '5-hour', w => w.windowDurationMins === 300),
+    ring('weekly', 'Weekly', w => Number.isFinite(w.windowDurationMins) && w.windowDurationMins >= 10080 && w.windowDurationMins % 10080 === 0)
   ];
   return { ...single, mode: 'dual', rings,
-    title: ['Plus 剩余额度', ...rings.map(r => r.title), ...formatResetCredits(response)].join('\n') };
+    title: ['Plus usage', ...rings.map(r => r.title), ...formatResetCredits(response)].join('\n') };
 }

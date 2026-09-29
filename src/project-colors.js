@@ -7,8 +7,8 @@ function installProjectColors() {
   if (window[KEY]?.version === VERSION) { window[KEY].refresh(); return; }
   window[KEY]?.destroy?.();
   const colors = [
-    ['red', '红色', '#ff5f57', '#cf4b43'], ['orange', '橙色', '#ff9f0a', '#b76c10'], ['yellow', '黄色', '#ffd60a', '#92700b'],
-    ['green', '绿色', '#30d158', '#268347'], ['blue', '蓝色', '#0a84ff', '#2674bf'], ['purple', '紫色', '#bf5af2', '#9950c0'], ['gray', '灰色', '#98989d', '#717980']
+    ['red', 'Red', '#ff5f57', '#cf4b43'], ['orange', 'Orange', '#ff9f0a', '#b76c10'], ['yellow', 'Yellow', '#ffd60a', '#92700b'],
+    ['green', 'Green', '#30d158', '#268347'], ['blue', 'Blue', '#0a84ff', '#2674bf'], ['purple', 'Purple', '#bf5af2', '#9950c0'], ['gray', 'Gray', '#98989d', '#717980']
   ];
   const allowed = new Set(colors.map(c => c[0]));
   const menus = new Map();
@@ -69,10 +69,10 @@ function installProjectColors() {
     const root = document.createElement('div');
     root.setAttribute('data-codex-project-palette', '');
     root.setAttribute('role', 'group');
-    root.setAttribute('aria-label', '文件夹颜色');
+    root.setAttribute('aria-label', 'Project color');
     const heading = document.createElement('div'); heading.className = 'project-colors-heading';
-    const label = document.createElement('span'); label.className = 'project-colors-label'; label.textContent = '文件夹颜色';
-    const reset = document.createElement('button'); reset.type = 'button'; reset.className = 'project-color-reset'; reset.textContent = '恢复默认'; reset.setAttribute('role', 'menuitem');
+    const label = document.createElement('span'); label.className = 'project-colors-label'; label.textContent = 'Project color';
+    const reset = document.createElement('button'); reset.type = 'button'; reset.className = 'project-color-reset'; reset.textContent = 'Reset'; reset.setAttribute('role', 'menuitem');
     heading.append(label, reset);
     const swatches = document.createElement('div'); swatches.className = 'project-colors-swatches';
     const error = document.createElement('div'); error.className = 'project-color-error'; error.setAttribute('role', 'status'); error.hidden = true;
@@ -102,7 +102,7 @@ function installProjectColors() {
         if (color === null) localStorage.removeItem(key); else localStorage.setItem(key, color);
         storageAvailable = true;
       } catch {
-        storageAvailable = false; error.hidden = false; error.textContent = '颜色保存失败，请重试'; return;
+        storageAvailable = false; error.hidden = false; error.textContent = 'Could not save the color. Try again.'; return;
       }
       paintRows(); render(); dismiss(menu);
     }

@@ -1,5 +1,5 @@
 function installUsageBadge() {
-  const VERSION = 46;
+  const VERSION = 47;
   const KEY = '__codexUsageBadge';
   if (window[KEY]?.version === VERSION) {
     window[KEY].place();
@@ -58,13 +58,12 @@ function installUsageBadge() {
       --usage-shadow: inset 0 1px 0 #fff, inset 0 -1px 1px #23324008, 0 2px 5px #26384712;
       --usage-color: var(--usage-normal-color); --usage-soft: var(--usage-normal-soft);
       --usage-ring-track: var(--usage-normal-track); --usage-glow: var(--usage-normal-glow);
-      --usage-width: 34px; --usage-ring-size: 26px;
-      position: relative; box-sizing: border-box; width: var(--usage-width); height: 84px; flex: 0 0 84px;
-      align-self: center; margin: 0 0 2px; padding: 37px 2px 10px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-      border: 1px solid var(--usage-border); border-radius: calc(var(--usage-width) / 2); outline: none; color: var(--usage-text);
-      background: radial-gradient(ellipse at 50% 17px, var(--usage-glow), transparent 69%),
-        var(--usage-surface);
+      --usage-width: 36px; --usage-ring-size: 24px;
+      position: relative; box-sizing: border-box; width: var(--usage-width); height: 66px; flex: 0 0 66px;
+      align-self: center; margin: 2px 0 4px; padding: 31px 1px 6px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      border: 1px solid var(--usage-border); border-radius: 12px; outline: none; color: var(--usage-text);
+      background: var(--usage-surface);
       box-shadow: var(--usage-shadow);
       cursor: default; user-select: none;
       -webkit-app-region: no-drag; font-family: inherit;
@@ -73,12 +72,12 @@ function installUsageBadge() {
     #codex-usage-badge[hidden], #codex-usage-tooltip[hidden] { display: none !important; }
     #codex-usage-badge .usage-primary { display: contents; }
     #codex-usage-badge .usage-secondary[hidden] { display: none !important; }
-    #codex-usage-badge[data-mode="dual"] { height: 144px; flex-basis: 144px; justify-content: flex-start; padding: 37px 2px 8px; }
+    #codex-usage-badge[data-mode="dual"] { height: 116px; flex-basis: 116px; justify-content: flex-start; padding: 31px 1px 5px; }
     #codex-usage-badge .usage-secondary {
       --usage-color: var(--usage-normal-color); --usage-soft: var(--usage-normal-soft);
       --usage-ring-track: var(--usage-normal-track); --usage-glow: var(--usage-normal-glow);
-      position: relative; box-sizing: border-box; width: 100%; flex: 0 0 64px;
-      display: flex; flex-direction: column; align-items: center; padding: 33px 0 0; gap: 4px;
+      position: relative; box-sizing: border-box; width: 100%; flex: 0 0 48px;
+      display: flex; flex-direction: column; align-items: center; padding: 25px 0 0; gap: 1px;
     }
     #codex-usage-badge:hover { border-color: var(--usage-border-hover); }
     #codex-usage-badge:focus-visible { outline: 1px solid var(--usage-color); outline-offset: 2px; }
@@ -101,8 +100,8 @@ function installUsageBadge() {
       transition: stroke-dashoffset 240ms ease;
     }
     #codex-usage-badge .usage-secondary .usage-ring-value { stroke: url(#codex-usage-ring-gradient-weekly); }
-    #codex-usage-badge .usage-number { font-size: 11px; line-height: 14px; font-weight: 700; letter-spacing: -.3px; white-space: nowrap; }
-    #codex-usage-badge .usage-window { font-size: 7.5px; line-height: 9px; font-weight: 400; color: var(--usage-label); white-space: nowrap; }
+    #codex-usage-badge .usage-number { font-size: 10px; line-height: 12px; font-weight: 700; letter-spacing: -.3px; white-space: nowrap; }
+    #codex-usage-badge .usage-window { font-size: 7px; line-height: 8px; font-weight: 500; color: var(--usage-label); white-space: nowrap; }
     #codex-usage-badge[data-tone="warning"], #codex-usage-badge .usage-secondary[data-tone="warning"] { --usage-color: var(--usage-warning-color); --usage-soft: var(--usage-warning-soft); --usage-ring-track: var(--usage-warning-track); --usage-glow: var(--usage-warning-glow); }
     #codex-usage-badge[data-tone="danger"], #codex-usage-badge .usage-secondary[data-tone="danger"] { --usage-color: var(--usage-danger-color); --usage-soft: var(--usage-danger-soft); --usage-ring-track: var(--usage-danger-track); --usage-glow: var(--usage-danger-glow); }
     #codex-usage-badge[data-tone="muted"], #codex-usage-badge .usage-secondary[data-tone="muted"] { --usage-color: var(--usage-muted-color); --usage-soft: var(--usage-muted-soft); --usage-ring-track: var(--usage-muted-track); --usage-glow: var(--usage-muted-glow); }
@@ -131,7 +130,7 @@ function installUsageBadge() {
     }
     @media (prefers-reduced-motion: reduce) { #codex-usage-badge .usage-ring-value { transition: none; } }
   `;
-  let value = { percent: null, title: '正在读取 Codex 剩余用量', tone: 'muted', windowLabel: '', mode: 'single', rings: null };
+  let value = { percent: null, title: 'Loading Codex usage…', tone: 'muted', windowLabel: '', mode: 'single', rings: null };
   let placementTimer = null;
   let hoverTimer = null;
   let rail = null;
@@ -139,8 +138,8 @@ function installUsageBadge() {
   // A dead agent must not leave a healthy-looking quota indefinitely.
   function expireValue() {
     if (disposed || value.stale || !Number.isFinite(value.updatedAt) || Date.now() - value.updatedAt < 150000) return;
-    value = { ...value, stale: true, percent: null, tone: 'muted', title: '用量数据已过期，正在等待重新连接',
-      rings: value.rings?.map(ring => ({ ...ring, percent: null, tone: 'muted', title: `${ring.label}：暂不可用` })) ?? null };
+    value = { ...value, stale: true, percent: null, tone: 'muted', title: 'Usage data expired. Waiting to reconnect…',
+      rings: value.rings?.map(ring => ({ ...ring, percent: null, tone: 'muted', title: `${ring.label}: unavailable` })) ?? null };
     render();
   }
   const freshnessTimer = setInterval(expireValue, 1000);
@@ -196,11 +195,11 @@ function installUsageBadge() {
     badge.dataset.tone = dual ? value.rings[0].tone : value.tone;
     secondaryMeter.hidden = !dual;
     renderMeter(primaryMeter, dual ? value.rings[0] : {
-      ...value, label: value.windowLabel === '周' ? '周额度' : percent === null ? '用量' : '5h额度'
+      ...value, label: value.windowLabel === 'Weekly' ? 'Weekly' : percent === null ? 'Usage' : '5-hour'
     }, dual);
     if (dual) renderMeter(secondaryMeter, value.rings[1]);
     badge.setAttribute('role', dual ? 'group' : 'meter');
-    badge.setAttribute('aria-label', 'Codex 剩余用量');
+    badge.setAttribute('aria-label', 'Codex usage');
     if (dual) {
       for (const attr of ['aria-valuemin', 'aria-valuemax', 'aria-valuenow', 'aria-valuetext']) badge.removeAttribute(attr);
     } else {

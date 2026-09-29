@@ -32,7 +32,7 @@ async function run() {
     assert.ok(!macManager.agentConfig().ProgramArguments.some(s=>s.includes('manage.cjs')));
   }
   assert.equal(formatRateLimits(weekly).percent, 73);
-  assert.equal(formatRateLimits(weekly).windowLabel, '周');
+  assert.equal(formatRateLimits(weekly).windowLabel, 'Weekly');
   assert.equal(formatRateLimits(weekly).mode, 'single');
   assert.equal(formatRateLimits(weekly).rings, null);
   assert.equal(formatRateLimits(plus).mode, 'dual');
@@ -62,7 +62,7 @@ async function run() {
     await sleep(300);
     assert.equal(await page.locator('#typing').evaluate(el=>el===document.activeElement),true);
     assert.equal(await page.locator('#codex-usage-badge .usage-primary .usage-number').textContent(),'73%');
-    assert.equal(await page.locator('#codex-usage-badge .usage-primary .usage-window').textContent(),'周额度');
+    assert.equal(await page.locator('#codex-usage-badge .usage-primary .usage-window').textContent(),'Weekly');
     const after=await page.locator('.help').boundingBox();
     assert.equal(before.y,after.y,'help button must keep its original position');
     const box=await page.locator('#codex-usage-badge').boundingBox();
@@ -70,7 +70,7 @@ async function run() {
     await page.screenshot({path:path.join(root,'tests/preview-dark.png')});
     await page.locator('#codex-usage-badge').hover();
     await page.waitForSelector('#codex-usage-tooltip:visible');
-    assert.match(await page.locator('#codex-usage-tooltip').textContent(),/剩余73%/);
+    assert.match(await page.locator('#codex-usage-tooltip').textContent(),/73% remaining/);
     await page.screenshot({path:path.join(root,'tests/preview-tooltip.png')});
     await page.evaluate(()=>document.documentElement.classList.remove('dark'));
     await page.evaluate(()=>{document.documentElement.dataset.theme='light';document.body.style.color='#272c29';document.querySelector('nav').style.background='#f2f2f1';document.querySelector('aside').style.background='#fff';});
@@ -98,7 +98,7 @@ async function run() {
     assert.equal(await page.evaluate(()=>window.__codexUsageBadge.status().placed),true);
     for(let i=0;i<5;i++)await page.evaluate(buildBootstrapScript());
     assert.equal(await page.locator('#codex-usage-badge').count(),1);
-    await page.evaluate(()=>window.__codexUsageBadge.update({percent:null,title:'暂不可用',tone:'muted',windowLabel:''}));
+    await page.evaluate(()=>window.__codexUsageBadge.update({percent:null,title:'Unavailable',tone:'muted',windowLabel:''}));
     assert.equal(await page.locator('#codex-usage-badge .usage-primary .usage-number').textContent(),'—');
     assert.equal(await page.locator('#codex-usage-badge').getAttribute('aria-valuenow'),null);
     await page.evaluate(()=>window.__codexUsageBadge.destroy());
@@ -114,12 +114,12 @@ async function run() {
     const rings=badge.locator('.usage-ring:visible');
     assert.equal(await rings.count(),2);
     assert.deepEqual(await badge.locator('.usage-number').allTextContents(),['94%','73%']);
-    assert.deepEqual(await badge.locator('.usage-window').allTextContents(),['5h额度','周额度']);
+    assert.deepEqual(await badge.locator('.usage-window').allTextContents(),['5-hour','Weekly']);
     assert.equal(await badge.getAttribute('role'),'group');
     assert.deepEqual(await badge.locator('[role="meter"]').evaluateAll(els=>els.map(el=>el.getAttribute('aria-valuenow'))),['94','73']);
     const dualBox=await badge.boundingBox();
-    assert.equal(dualBox.width,34);
-    assert.equal(dualBox.height,144);
+    assert.equal(dualBox.width,36);
+    assert.equal(dualBox.height,116);
     assert.equal((await page.locator('.help').boundingBox()).y,before.y);
     const circleBoxes=await rings.all();
     for(const ring of circleBoxes){const r=await ring.boundingBox();assert.equal(r.x+r.width/2,dualBox.x+dualBox.width/2);}
@@ -130,7 +130,7 @@ async function run() {
     await page.screenshot({path:path.join(root,'tests/preview-plus-badge.png'),clip:{x:dualBox.x-8,y:dualBox.y-8,width:dualBox.width+16,height:dualBox.height+16}});
     await badge.hover();
     await page.waitForSelector('#codex-usage-tooltip:visible');
-    assert.match(await page.locator('#codex-usage-tooltip').textContent(),/5h额度：剩余 94%\n周额度：剩余 73%/);
+    assert.match(await page.locator('#codex-usage-tooltip').textContent(),/5-hour: 94% remaining\nWeekly: 73% remaining/);
     for(const [primaryUsed,secondaryUsed,tones] of [[6,83,['normal','warning']],[100,0,['danger','normal']]]) {
       await page.evaluate(v=>window.__codexUsageBadge.update(v),formatRateLimits({rateLimits:{...plus.rateLimits,primary:{...plus.rateLimits.primary,usedPercent:primaryUsed},secondary:{...plus.rateLimits.secondary,usedPercent:secondaryUsed}}}));
       assert.deepEqual(await badge.locator('[role="meter"]').evaluateAll(els=>els.map(el=>el.dataset.tone)),tones);
@@ -151,7 +151,7 @@ async function run() {
     assert.ok(dualSmall.y>=0&&dualSmall.y+dualSmall.height<=(await page.locator('.help').boundingBox()).y);
     await page.evaluate(v=>window.__codexUsageBadge.update(v),formatRateLimits(weekly));
     assert.equal(await rings.count(),1);
-    assert.equal((await badge.boundingBox()).height,84);
+    assert.equal((await badge.boundingBox()).height,66);
     assert.equal(await badge.getAttribute('role'),'meter');
     assert.equal(await badge.getAttribute('aria-valuenow'),'73');
     await page.evaluate(()=>window.__codexUsageBadge.destroy());

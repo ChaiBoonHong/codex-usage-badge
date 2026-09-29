@@ -42,7 +42,7 @@ const fixture=`<!doctype html><html class="dark"><meta charset="UTF-8"><style>
   const squares=page.locator('[data-codex-thread-tokens]');
   assert.deepEqual(await squares.allTextContents(),['','','','',''],'totals must only appear on hover');
   assert.deepEqual(await squares.evaluateAll(nodes=>nodes.map(n=>n.dataset.level)),['3','0','0','0','0']);
-  assert.deepEqual(await squares.first().evaluate(n=>({width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height})),{width:12,height:12});
+  assert.deepEqual(await squares.first().evaluate(n=>({width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height})),{width:7,height:7});
   assert.deepEqual(await page.locator('.row').evaluateAll(rows=>rows.map(r=>r.getBoundingClientRect().height)),heights);
   assert.equal(await page.locator('[data-thread-title]').first().textContent(),'示例会话 A');
   const unchangedWrites=await page.evaluate(()=>{
@@ -64,20 +64,20 @@ const fixture=`<!doctype html><html class="dark"><meta charset="UTF-8"><style>
     const offlineSession={evaluate:async()=>{throw new Error('window disconnected')}};
     await refreshThreadTokens({sessions:new Map([['first',session],['second',secondSession],['offline',offlineSession]])},reader);
     assert.deepEqual(await second.evaluate(()=>window.receivedIds),[ids[1]],'each window receives only its own requested totals');
-    assert.equal(await second.locator('[data-codex-thread-tokens]').getAttribute('aria-label'),'累计使用 0 Token');
-    assert.equal(await squares.first().getAttribute('aria-label'),'累计使用 1.23千万 Token');
+    assert.equal(await second.locator('[data-codex-thread-tokens]').getAttribute('aria-label'),'0 cumulative tokens');
+    assert.equal(await squares.first().getAttribute('aria-label'),'12.35M cumulative tokens');
   } finally {await second.close();}
   await page.locator('[data-thread-title-trigger]').first().evaluate(el=>{
     for(const type of ['mouseover','pointerover','pointermove'])el.addEventListener(type,e=>e.stopPropagation());
   });
   await page.locator('[data-codex-thread-tokens]').first().hover();await page.waitForSelector('#codex-thread-tokens-tooltip:visible');
-  assert.equal(await page.locator('#codex-thread-tokens-tooltip').textContent(),'累计使用 1.23千万 Token');
+  assert.equal(await page.locator('#codex-thread-tokens-tooltip').textContent(),'12.35M cumulative tokens');
   await page.screenshot({path:path.join(__dirname,'preview-thread-tokens.png')});
   const bounds=await squares.first().boundingBox();
-  for(const [x,y] of [[bounds.x-4,bounds.y+6],[bounds.x+16,bounds.y+6],[bounds.x+6,bounds.y-4],[bounds.x+6,bounds.y+16]]) {
+  for(const [x,y] of [[bounds.x-6,bounds.y+3.5],[bounds.x+bounds.width+6,bounds.y+3.5],[bounds.x+3.5,bounds.y-6],[bounds.x+3.5,bounds.y+bounds.height+6]]) {
     await page.mouse.move(410,410);await page.mouse.move(x,y);
     await page.waitForSelector('#codex-thread-tokens-tooltip:visible',{timeout:1000});
-    assert.equal(await page.locator('#codex-thread-tokens-tooltip').textContent(),'累计使用 1.23千万 Token');
+    assert.equal(await page.locator('#codex-thread-tokens-tooltip').textContent(),'12.35M cumulative tokens');
   }
   await page.locator('[data-thread-title]').first().hover();
   assert.equal(await page.locator('#codex-thread-tokens-tooltip').isVisible(),false,'moving onto the title must dismiss the token tooltip');
@@ -103,10 +103,10 @@ const fixture=`<!doctype html><html class="dark"><meta charset="UTF-8"><style>
   await page.locator('[data-codex-thread-tokens]').first().click({button:'right'});assert.equal(await page.evaluate(()=>window.contextMenus),1);
   await page.mouse.move(410,410);assert.equal(await page.locator('#codex-thread-tokens-tooltip').isVisible(),false);
   const palette=new Map();
-  for(const [total,level,label] of [[0,0,'0'],[1,1,'1'],[9999,1,'9,999'],[10000,1,'1万'],[123456,1,'12.35万'],[999999,1,'100万'],[1000000,2,'100万'],[9999999,2,'1千万'],[10000000,3,'1千万'],[18488659,3,'1.85千万'],[99999999,3,'1亿'],[100000000,4,'1亿'],[450000000,4,'4.5亿']]) {
+  for(const [total,level,label] of [[0,0,'0'],[1,1,'1'],[9999,1,'10K'],[10000,1,'10K'],[123456,1,'123.46K'],[999999,1,'1M'],[1000000,2,'1M'],[9999999,2,'10M'],[10000000,3,'10M'],[18488659,3,'18.49M'],[99999999,3,'100M'],[100000000,4,'100M'],[450000000,4,'450M']]) {
     put.run(ids[0],total,'PRIVATE TITLE');await refreshThreadTokens(injector,reader);
     assert.equal(await squares.first().getAttribute('data-level'),String(level));
-    assert.equal(await squares.first().getAttribute('aria-label'),`累计使用 ${label} Token`);
+    assert.equal(await squares.first().getAttribute('aria-label'),`${label} cumulative tokens`);
     palette.set(level,await squares.first().evaluate(n=>getComputedStyle(n).backgroundColor));
   }
   assert.equal(new Set(palette.values()).size,5,'each tier must have a distinct visible color');
@@ -119,11 +119,11 @@ const fixture=`<!doctype html><html class="dark"><meta charset="UTF-8"><style>
   await page.waitForFunction(()=>window.__codexThreadTokens.status().badges===5);
   await page.waitForTimeout(150);assert.equal(await page.locator('[data-codex-thread-tokens]').count(),5,'cloned rows must not duplicate badges');
   await page.waitForSelector('#codex-thread-tokens-tooltip:visible',{timeout:1000});
-  assert.equal(await page.locator('#codex-thread-tokens-tooltip').textContent(),'累计使用 0 Token','stationary pointer must recover after a row remount');
+  assert.equal(await page.locator('#codex-thread-tokens-tooltip').textContent(),'0 cumulative tokens','stationary pointer must recover after a row remount');
   await page.evaluate(()=>window.__codexThreadTokens.update({ok:true,totals:{},checkedAt:Date.now()-31000}));
   assert.deepEqual(await squares.evaluateAll(nodes=>nodes.map(n=>n.dataset.level)),['0','0','0','0','0']);
   await refreshThreadTokens(injector,emptyReader);assert.equal(await page.evaluate(()=>window.__codexThreadTokens.status().available),0);
-  await refreshThreadTokens(injector,reader);assert.equal(await squares.first().getAttribute('aria-label'),'累计使用 0 Token');
+  await refreshThreadTokens(injector,reader);assert.equal(await squares.first().getAttribute('aria-label'),'0 cumulative tokens');
   await page.evaluate(()=>document.documentElement.classList.remove('dark'));
   assert.notEqual(await squares.first().evaluate(n=>getComputedStyle(n).backgroundColor),palette.get(0));
   await page.setViewportSize({width:240,height:270});

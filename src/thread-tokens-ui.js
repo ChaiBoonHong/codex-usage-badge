@@ -1,5 +1,5 @@
 function installThreadTokens() {
-  const VERSION = 7;
+  const VERSION = 8;
   const KEY = '__codexThreadTokens';
   const ROW = '[data-app-action-sidebar-thread-row][data-app-action-sidebar-thread-id]';
   const MARK = 'data-codex-thread-tokens';
@@ -18,11 +18,11 @@ function installThreadTokens() {
   // GPT can nest a block title inside a non-flex slot. Style only the direct
   // badge/title container, leaving outer metadata and secondary rows intact.
   style.textContent = `
-    [${MARK}] { --token-0: #d6dce2; --token-1: #c4d5ec; --token-2: #90b2e1; --token-3: #5e90d0; --token-4: #2f6ebf;
-      position: relative; display: inline-block; align-self: center; flex: 0 0 12px; width: 12px; height: 12px;
-      box-sizing: border-box; border-radius: 3px; border: 0; background: var(--token-0);
+    [${MARK}] { --token-0: #cfd8df; --token-1: #a9c7e8; --token-2: #78a9dc; --token-3: #4f83c2; --token-4: #2f6ebf;
+      position: relative; display: inline-block; align-self: center; flex: 0 0 7px; width: 7px; height: 7px; margin: 0 6px 0 1px;
+      box-sizing: border-box; border-radius: 50%; border: 0; background: var(--token-0);
       cursor: inherit; user-select: none; -webkit-app-region: no-drag; }
-    [${MARK}]::before { content: ''; position: absolute; inset: -6px; }
+    [${MARK}]::before { content: ''; position: absolute; inset: -7px; }
     :is(${ROW}, ${ROW} *):has(> [${MARK}] + [data-thread-title]) {
       display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important;
       align-items: center; gap: 6px; min-width: 0;
@@ -70,7 +70,7 @@ function installThreadTokens() {
     return 4;
   }
   function formatTokens(total) {
-    const units = [[1e8, '亿'], [1e7, '千万'], [1e4, '万']];
+    const units = [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
     for (let i = 0; i < units.length; i++) {
       const [divisor, suffix] = units[i];
       if (total < divisor) continue;
@@ -78,18 +78,18 @@ function installThreadTokens() {
       if (i > 0 && rounded * divisor >= units[i - 1][0]) return `1${units[i - 1][1]}`;
       return `${rounded}${suffix}`;
     }
-    return total.toLocaleString('zh-CN');
+    return total.toLocaleString('en-US');
   }
   function reading(row) {
     const { id } = identity(row);
-    if (!id) return { state: 'unknown', detail: '此会话暂无可读取的本地 Token 记录' };
+    if (!id) return { state: 'unknown', detail: 'No local token record is available for this chat.' };
     const stale = Number.isFinite(snapshot.checkedAt) && Date.now() - snapshot.checkedAt > 30000;
-    if (stale) return { state: 'stale', detail: 'Token 用量数据已过期，正在等待重新连接' };
+    if (stale) return { state: 'stale', detail: 'Token data expired. Waiting to reconnect…' };
     const total = snapshot.totals[id];
-    if (!received) return { state: 'unknown', detail: '正在读取会话累计 Token' };
-    if (!snapshot.ok) return { state: 'unknown', detail: '暂时无法读取本地 Token 记录，正在自动重试' };
-    if (!Number.isSafeInteger(total) || total < 0) return { state: 'unknown', detail: '此会话暂无可读取的本地 Token 记录' };
-    return { level: level(total), state: 'ready', detail: `累计使用 ${formatTokens(total)} Token` };
+    if (!received) return { state: 'unknown', detail: 'Loading cumulative chat tokens…' };
+    if (!snapshot.ok) return { state: 'unknown', detail: 'Local token data is temporarily unavailable. Retrying…' };
+    if (!Number.isSafeInteger(total) || total < 0) return { state: 'unknown', detail: 'No local token record is available for this chat.' };
+    return { level: level(total), state: 'ready', detail: `${formatTokens(total)} cumulative tokens` };
   }
   function hideTooltip() { clearTimeout(tooltipTimer); tooltipTimer = null; hovered = null; tooltip.hidden = true; }
   function positionTooltip() {
