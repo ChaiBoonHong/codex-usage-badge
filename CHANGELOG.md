@@ -1,5 +1,9 @@
 # Changelog
 
+## Windows 0.11.9
+
+- Fixed confirmed restart refusing to close Codex when its existing Badge connection occupied the local debug port.
+
 ## Windows 0.11.8
 
 - Fixed confirmed menu restart being skipped when the Badge was already connected to Codex.

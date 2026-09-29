@@ -7,7 +7,7 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function main(){
   const root=path.dirname(__dirname),config=JSON.parse(fs.readFileSync(path.join(root,'config.json'),'utf8'));
   const force=process.argv.includes('--force');
-  if(await portInUse())throw Error('Usage Badge is already connected.');
+  if(!force&&await portInUse())throw Error('Usage Badge is already connected.');
   const bridge=new NativeBridge(config.AppExe,path.join(root,'stop.request'));
   try{
     const before=await bridge.call('snapshot');
