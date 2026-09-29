@@ -1,5 +1,9 @@
 # Changelog
 
+## Windows 0.11.10
+
+- Fixed confirmed restart rejecting the verified Codex process after it was already launched with the Badge debug port.
+
 ## Windows 0.11.9
 
 - Fixed confirmed restart refusing to close Codex when its existing Badge connection occupied the local debug port.

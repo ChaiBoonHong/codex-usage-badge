@@ -231,7 +231,7 @@ namespace CodexUsageBadge.Startup {
             var snapshot=TakeSnapshot();
             if(Stopped()||snapshot.apps.Length!=1) return new {accepted=false,reason="multiple-or-missing-app"};
             var app=snapshot.apps[0];
-            if(app.pid!=pid||app.key!=key||app.debugPort!=null) return new {accepted=false,reason="identity"};
+            if(app.pid!=pid||app.key!=key) return new {accepted=false,reason="identity"};
             using(var p=Process.GetProcessById(pid)) {
                 if(!Matches(p)||Identity(p)!=key) return new {accepted=false,reason="identity"};
                 applicationId=ReadApplicationId(p);

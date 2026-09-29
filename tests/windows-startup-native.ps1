@@ -65,7 +65,9 @@ public class StartupFixture : Form {
     Assert (!$snapshot.apps[0].plainLaunch) 'Custom arguments must not be dropped by restart'
     $reply=[CodexUsageBadge.Startup.Native]::Quit($child.Id,'wrong-identity',$snapshot.inputStamp)
     Assert (!$reply.accepted -and !$child.HasExited) 'Invalid identity guard'
-    Stop-Fixture
+    $reply=[CodexUsageBadge.Startup.Native]::KillManual($child.Id,$snapshot.apps[0].key)
+    Assert ($reply.accepted -and $child.WaitForExit(5000)) ('Connected force shutdown failed: '+$reply.reason)
+    $child.Dispose();$child=$null
     Start-Fixture
     $snapshot=[CodexUsageBadge.Startup.Native]::TakeSnapshot()
     Assert ($snapshot.apps.Count -eq 1 -and $snapshot.apps[0].plainLaunch) 'Plain native launch detection'
