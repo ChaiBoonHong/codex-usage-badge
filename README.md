@@ -1,26 +1,102 @@
-# Codex Usage Badge · Codex 用量条
+# Codex Usage Badge
 
-为 Codex 桌面端增加额度显示、项目配色和会话 Token 统计，适配浅色与深色主题。
+> A small, local-first status layer for the Codex desktop app.
 
-![Codex Usage Badge：原生风格额度圆环、项目配色与 Token 色块](assets/cover.png)
+[![Windows release](https://img.shields.io/github/v/release/ChaiBoonHong/codex-usage-badge?filter=*-windows&label=Windows&color=0f8b6d)](https://github.com/ChaiBoonHong/codex-usage-badge/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-4c78a8.svg)](LICENSE)
+[![Local only](https://img.shields.io/badge/data-local%20only-0f8b6d)](SECURITY.md)
 
-## 功能
+![Codex Usage Badge preview](assets/cover.png)
 
-- **额度圆环**：查看订阅剩余额度，绿、黄、红对应充足、偏低和即将耗尽。Plus 支持 5 小时与每周额度双圆环。
-- **文件夹配色**：在项目菜单中选择颜色，方便区分不同项目。
-- **会话 Token**：用蓝色色块表示用量，悬停查看累计 Token，按万、千万、亿显示。
+**Usage at a glance. Projects at a glance. No account credentials required.**
 
-## 下载
+| Jump to | What you will find |
+| --- | --- |
+| [Install on Windows](#install-on-windows) | The current Windows download and first-run steps |
+| [What it adds](#what-it-adds) | Usage, project colors, and Token indicators |
+| [Privacy and safety](#privacy-and-safety) | Exactly what stays local and why |
+| [Build from source](#build-from-source) | Reproducible build and test commands |
 
-[**macOS v0.9.2 预发布版**](https://github.com/jaykinhoo9/codex-usage-badge/releases/tag/v0.9.2-macos) · [Windows v0.10.0](https://github.com/jaykinhoo9/codex-usage-badge/releases/tag/v0.10.0-windows)
+## What it adds
 
-| 系统 | 安装包 | 使用说明 |
-| --- | --- | --- |
-| macOS · Apple Silicon / Intel | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.9.2-macos/CodexUsageBadge-macOS-0.9.2.zip) | [macOS 安装](docs/macos.md) |
-| Windows 10 / 11 | [下载 ZIP](https://github.com/jaykinhoo9/codex-usage-badge/releases/download/v0.10.0-windows/CodexUsageBadge-Windows-0.10.0.zip) | [Windows 安装](docs/windows.md) |
+| Feature | In the Codex sidebar |
+| --- | --- |
+| **Usage card** | Compact 5-hour and weekly usage rings. Hover for reset time and available reset credits. |
+| **Project colors** | Pick a color from a project’s context menu; it stays with that local project. |
+| **Token dots** | Small, unobtrusive circular markers. Hover for cumulative chat-token totals. |
 
-macOS 和 Windows 安装后均可沿用原应用图标，启动时自动加载。Windows 后台在新窗口尚未开始操作时请求正常重开；点击、输入或后台启动时会跳过。需要已登录的 Codex 客户端和 Node.js 24+，安装器会优先查找客户端自带的运行环境。
+<details>
+<summary><strong>Why the new design is quieter</strong></summary>
 
-[更新记录](CHANGELOG.md) · [问题反馈](https://github.com/jaykinhoo9/codex-usage-badge/issues) · [开发说明](docs/development.md) · [隐私与安全](SECURITY.md)
+The badge deliberately avoids a second navigation system. Usage is a compact card near the existing rail footer, and Token information is a small colored dot instead of a large square. Labels, menus, tooltips, and runtime messages are English-first.
 
-非官方项目，与 OpenAI 无关联。采用 [MIT 许可](LICENSE)。
+</details>
+
+<details>
+<summary><strong>How colors and Token dots work</strong></summary>
+
+- Right-click a project or use <kbd>Shift</kbd> + <kbd>F10</kbd> to choose its color.
+- Token dots show a local cumulative total. Their shades increase from gray through blue as the total grows.
+- The total includes cached input and is not a measurement of the current context window.
+
+</details>
+
+## Install on Windows
+
+1. Download [**CodexUsageBadge-Windows-0.10.1.zip**](https://github.com/ChaiBoonHong/codex-usage-badge/releases/download/v0.10.1-windows/CodexUsageBadge-Windows-0.10.1.zip).
+2. Extract the ZIP completely.
+3. Open and sign in to the Codex desktop app once.
+4. Run `Install.cmd` from the extracted folder.
+5. Fully quit Codex, including its tray process, then reopen it from the normal Codex icon.
+
+The Windows helper waits for a new, untouched foreground launch. It may briefly close and reopen Codex once to add its local connection. It does not take over windows that are already in use.
+
+Need help? Open [Windows instructions](docs/windows.md) or run `Status.cmd` from the extracted folder.
+
+## Privacy and safety
+
+The badge is a local integration, not a hosted service.
+
+- It reads usage through the already signed-in Codex CLI.
+- It reads only local session IDs and cumulative Token values; it does not read chat bodies.
+- It does not request API keys, cookies, or access tokens.
+- It uses `127.0.0.1:39222` only. Do not expose or forward that port.
+
+Read the full [security and privacy notes](SECURITY.md).
+
+## Compatibility
+
+| Requirement | Why |
+| --- | --- |
+| Windows 10 or 11 | Windows desktop app and local activation support |
+| Signed-in Codex desktop app | Supplies the local CLI and account context |
+| Node.js 24+ | Needed for `node:sqlite`; the installer first tries the bundled runtime |
+| Native Windows session | WSL and remote sessions cannot read the local Windows session database |
+
+## Build from source
+
+```powershell
+npm ci
+npx playwright install chromium --only-shell
+npm test
+npm run test:privacy
+python scripts/build_release.py --platform Windows
+```
+
+The release builder writes the ZIP and `SHA256SUMS.txt` to `dist/`. It uses an allowlist and does not package your Codex installation, chats, credentials, or local data.
+
+## Project map
+
+```text
+src/       Badge UI, formatting, local data readers, and CDP injection
+windows/   Windows installer, lifecycle worker, and Store-app activation
+startup/   Guarded startup controller and native bridge
+tests/     Unit, layout, lifecycle, and release-safety checks
+```
+
+## Status
+
+- **Windows v0.10.1** — English UI redesign and compact sidebar layout.
+- **macOS v0.9.2** — Existing release remains available; it is not changed by this Windows release.
+
+This is an independent MIT-licensed project and is not affiliated with OpenAI.

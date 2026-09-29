@@ -1,5 +1,11 @@
 # 更新记录
 
+## Windows 0.10.1 (pre-release)
+
+- Redesigned the badge for a quieter sidebar: compact usage cards and small circular Token markers.
+- Switched badge labels, tooltips, project-color controls, and runtime messages to English.
+- Improved English Token formatting with K, M, and B units.
+
 ## macOS 0.9.2（预发布）
 
 - 修复 GPT 模式下侧栏 Token 色块换行、与会话标题错位的问题。
